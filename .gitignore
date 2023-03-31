@@ -1,0 +1,5 @@
+DS_Store
+._*
+node_modules
+images/*.png
+wwebjs_auth_local/session
