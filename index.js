@@ -19,7 +19,6 @@ const sendWhitApi = async (req, res) => {
     sendMedia(from, 'aprovisionamientobsc.png');
     sendMedia(from, 'aseguramiento.png');
     sendMedia(from, 'aseguramientobsc.png');
-    sendMedia(from, 'aseguramientorepinf.png');
 
     res.send({status: 'Enviado'})
 }

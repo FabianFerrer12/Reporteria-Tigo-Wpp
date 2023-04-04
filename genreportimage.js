@@ -7,128 +7,251 @@ const db = require("./models");
 
 const getDataClick = async (categoria, estadosclick, horacita, tipotarea) => {
     try {
+
         const result = await mssqlDB.dbConnectionMssql(`SELECT
-            r.DateTimeExtraction,
-            r.AREA,
-            r.Region,
-            r.Categoria,
-            COUNT(r.CallID) AS 'cant_tareas',
-            COUNT(DISTINCT(r.Tecnico)) AS 'cant_tecnico',
-            CASE WHEN CAST(COUNT(DISTINCT(r.Tecnico)) AS NUMERIC) = 0 THEN 0 ELSE CAST(CAST(COUNT(r.CallID) AS NUMERIC)/CAST(COUNT(DISTINCT(r.Tecnico)) AS NUMERIC) AS DECIMAL(10,1)) END AS 'ratio'
-        FROM
-            (
-                SELECT
-                    GETDATE() DateTimeExtraction,
-                    TK.CallID,
-                    TK.UNEPedido,
-                    STA.Name AS Estado,
-                    DIS.Name AS Distrito,
-                    TK.UNEMunicipio,
-                    CASE
-                        WHEN DIS.Name in ('BARRANC', 'BARRANC_2', 'BARRANC_3') then 'Barrancabermeja'
-                        WHEN DIS.Name in ('BUGA') then 'Buga'
-                        WHEN DIS.Name in ('IGUANA') then 'Antioquia Centro'
-                        WHEN DIS.Name in ('TULUA') then 'Tulua'
-                        WHEN DIS.Name in ('MICROZONA 10', 'MICROZONA 22', 'MICROZONA 21') then 'Cartago'
-                        WHEN DIS.Name in ('MICROZONA 20') then 'Risaralda'
-                        ELSE RG.Name
-                    END AS Region,
-                    CASE
-                        WHEN AR.Name IN ('Default', 'Default_Pais') THEN 'Noroccidente'
-                        WHEN AR.Name IN ('Norte') THEN 'Costa'
-                        WHEN AR.Name = 'Noroccidente'
-                        and RG.Name in (
-                            'Cundinamarca Sur',
-                            'Cundinamarca Default',
-                            'Cundinamarca Norte'
-                        ) THEN 'Centro'
-                        WHEN RG.Name IN ('Antioquia Municipios', 'Antioquia_Edatel') then 'Edatel'
-                        ELSE AR.Name
-                    END AS AREA,
-                    CASE
-                        WHEN TT.Name in (
-                            'Reparacion Bronce Plus',
-                            'Reparacion GPON Bronce Plus'
-                        ) THEN 'Aseguramiento BSC'
-                        ELSE TTC.Name
-                    END AS Categoria,
-                    TT.Name AS TipoTarea,
-                    SS.Name AS Sistema,
-                    CASE
-                        WHEN upper(TK.[UNEHoraCita]) IN (
-                            'HO FIJ ARM',
-                            'HOR FIJ MAN',
-                            '07:30',
-                            '06:00',
-                            '07:00',
-                            'AM',
-                            'MA',
-                            'MAÑANA'
-                        ) THEN 'AM'
-                        WHEN upper(TK.[UNEHoraCita]) IN ('PM', '18:00', 'TARDE') THEN 'PM'
-                        ELSE 'TD'
-                    END AS UNEHoraCita,
-                    TK.UNEFechaCita,
-                    TK.AppointmentStart AS FechaInicioCita,
-                    TK.AppointmentFinish AS FechaFinCita,
-                    AG.StartTime AS FechaInicioAsignado,
-                    AG.FinishTime AS FechaFinAsignado,
-                    TK.Duration,
-                    TK.UNETecnologias,
-                    TK.UNESegmento,
-                    TK.UNEUENcalculada,
-                    TK.UNEAgendamientos AS UNEAgendamientoClick,
-                    TK.CompletionDate AS FechaCumplido,
-                    TK.CancellationDate AS FechaCancelado,
-                    TK.TimeModified AS FechaModificado,
-                    TK.EngineerID AS Tecnico,
-                    TK.EngineerName,
-                    TK.UNEProvisioner,
-                    TK.OnSiteDate,
-                    (
-                        DATEDIFF(
-                            MINUTE,
-                            TK.OnSiteDate,
-                            COALESCE(TK.CompletionDate, GETDATE())
-                        )
-                    ) "TiempoenSitio"
-                FROM
-                    W6TASKS AS TK
-                    LEFT OUTER JOIN W6UNESOURCESYSTEMS AS SS ON TK.UNESourceSystem = SS.W6Key
-                    LEFT OUTER JOIN W6REGIONS AS RG ON TK.Region = RG.W6Key
-                    LEFT OUTER JOIN W6AREA AS AR ON AR.W6Key = TK.Area
-                    LEFT OUTER JOIN W6ASSIGNMENTS AS AG ON AG.Task = TK.W6Key
-                    LEFT OUTER JOIN W6TASK_STATUSES AS STA ON TK.Status = STA.W6Key
-                    LEFT OUTER JOIN W6DISTRICTS AS DIS ON TK.District = DIS.W6Key
-                    LEFT OUTER JOIN W6TASK_TYPES AS TT ON TK.TaskType = TT.W6Key
-                    LEFT OUTER JOIN W6TASKTYPECATEGORY AS TTC ON TK.TaskTypeCategory = TTC.W6Key
-                WHERE
-                    (
-                        TK.AppointmentStart > DATEADD(day, + 0, CONVERT (date, SYSDATETIME()))
-                        AND TK.AppointmentStart < DATEADD(day, + 1, CONVERT (date, SYSDATETIME()))
-                        AND STA.Name IN (
-                            ${estadosclick}
-                        )
-                        AND TTC.Name IN (
-                            'Aprovisionamiento',
-                            'Aseguramiento',
-                            'Aprovisionamiento BSC',
-                            'Aseguramiento BSC'
-                        )
-                        AND TK.UNEMunicipio IS NOT NULL
-                        ${horacita}
-                        ${tipotarea}
-                    )
-            ) AS r
-        WHERE r.Categoria IN('${categoria}')
-        GROUP BY
-            r.DateTimeExtraction,
-            r.AREA,
-            r.Region,
-            r.Categoria
-        ORDER BY
-            r.AREA ASC,
-            r.Region ASC;`);
+                                                            r.DateTimeExtraction,
+                                                            r.AREA,
+                                                            r.Region,
+                                                            r.Categoria,
+                                                            COUNT (r.CallID) AS 'cant_tareas',
+                                                            COUNT (DISTINCT(r.Tecnico)) AS 'cant_tecnico',
+                                                            CASE
+                                                        WHEN CAST (
+                                                            COUNT (DISTINCT(r.Tecnico)) AS NUMERIC
+                                                        ) = 0 THEN
+                                                            0
+                                                        ELSE
+                                                            CAST (
+                                                                CAST (COUNT(r.CallID) AS NUMERIC) / CAST (
+                                                                    COUNT (DISTINCT(r.Tecnico)) AS NUMERIC
+                                                                ) AS DECIMAL (10, 1)
+                                                            )
+                                                        END AS 'ratio'
+                                                        FROM
+                                                            (
+                                                                SELECT
+                                                                    GETDATE() DateTimeExtraction,
+                                                                    TK.CallID,
+                                                                    TK.UNEPedido,
+                                                                    STA.Name AS Estado,
+                                                                    DIS.Name AS Distrito,
+                                                                    TK.UNEMunicipio,
+                                                                    CASE
+                                                                WHEN DIS.Name IN (
+                                                                    'BARRANC',
+                                                                    'BARRANC_2',
+                                                                    'BARRANC_3'
+                                                                ) THEN
+                                                                    'Barrancabermeja'
+                                                                WHEN DIS.Name IN ('BUGA') THEN
+                                                                    'Buga'
+                                                                WHEN DIS.Name IN ('IGUANA') THEN
+                                                                    'Antioquia Norte'
+                                                                WHEN RG.Name IN ('Otros_Municipios_Norte') THEN
+                                                                    'Guajira'
+                                                                WHEN DIS.Name IN ('TULUA') THEN
+                                                                    'Tulua'
+                                                                WHEN DIS.Name IN (
+                                                                    'MICROZONA 10',
+                                                                    'MICROZONA 22',
+                                                                    'MICROZONA 21'
+                                                                ) THEN
+                                                                    'Cartago'
+                                                                WHEN DIS.Name IN ('MICROZONA 20') THEN
+                                                                    'Risaralda'
+                                                                WHEN RG.Name IN (
+                                                                    'Cundinamarca Sur',
+                                                                    'Cundinamarca Default',
+                                                                    'Cundinamarca Norte'
+                                                                ) THEN
+                                                                    'Bogota'
+                                                                ELSE
+                                                                    RG.Name
+                                                                END AS Region,
+                                                                CASE
+                                                            WHEN RG.Name IN (
+                                                                'Cundinamarca Sur',
+                                                                'Cundinamarca Default',
+                                                                'Cundinamarca Norte'
+                                                            ) THEN
+                                                                'Bogota'
+                                                            WHEN RG.Name IN ('Meta') THEN
+                                                                'Sur'
+                                                            WHEN AR.Name IN ('Default', 'Default_Pais') THEN
+                                                                'Noroccidente'
+                                                            WHEN AR.Name IN ('Norte') THEN
+                                                                'Costa'
+                                                            WHEN RG.Name IN (
+                                                                'Nariño',
+                                                                'Buga',
+                                                                'Cauca',
+                                                                'Tulua',
+                                                                'Valle',
+                                                                'Caldas',
+                                                                'Cartago',
+                                                                'Quindio',
+                                                                'Risaralda',
+                                                                'Tolima',
+                                                                'Valle Quindío'
+                                                            ) THEN
+                                                                'Occidente'
+                                                            WHEN RG.Name IN (
+                                                                'Antioquia Municipios',
+                                                                'Antioquia_Edatel'
+                                                            ) THEN
+                                                                'Edatel'
+                                                            WHEN RG.Name IN ('Default_Pais') THEN
+                                                                'Edatel'
+                                                            ELSE
+                                                                AR.Name
+                                                            END AS AREA,
+                                                            CASE
+                                                        WHEN TT.Name IN (
+                                                            'Reparacion Bronce Plus',
+                                                            'Reparacion GPON Bronce Plus',
+                                                            'Reparacion Bronce Plus Internet',
+                                                            'Reparacion GPON Bronce Plus Internet'
+                                                        ) THEN
+                                                            'Aseguramiento BSC'
+                                                        ELSE
+                                                            TTC.Name
+                                                        END AS Categoria,
+                                                        TT.Name AS TipoTarea,
+                                                        SS.Name AS Sistema,
+                                                        CASE
+                                                        WHEN UPPER (TK.[UNEHoraCita]) IN (
+                                                            'HO FIJ ARM',
+                                                            'HOR FIJ MAN',
+                                                            '07:30',
+                                                            '06:00',
+                                                            '07:00',
+                                                            'AM',
+                                                            'MA',
+                                                            'MAÑANA'
+                                                        ) THEN
+                                                            'AM'
+                                                        WHEN UPPER (TK.[UNEHoraCita]) IN ('PM', '18:00', 'TARDE') THEN
+                                                            'PM'
+                                                        ELSE
+                                                            'TD'
+                                                        END AS UNEHoraCita,
+                                                        TK.UNEFechaCita,
+                                                        TK.AppointmentStart AS FechaInicioCita,
+                                                        TK.AppointmentFinish AS FechaFinCita,
+                                                        AG.StartTime AS FechaInicioAsignado,
+                                                        AG.FinishTime AS FechaFinAsignado,
+                                                        TK.Duration,
+                                                        TK.UNETecnologias,
+                                                        TK.UNESegmento,
+                                                        TK.UNEUENcalculada,
+                                                        TK.UNEAgendamientos UNEAgendamientoClick,
+                                                        TK.CompletionDate AS FechaCumplido,
+                                                        TK.CancellationDate AS FechaCancelado,
+                                                        TK.TimeModified AS FechaModificado,
+                                                        TK.EngineerID AS Tecnico,
+                                                        TK.EngineerName,
+                                                        TK.UNEProvisioner,
+                                                        TK.OnSiteDate,
+                                                        (
+                                                            DATEDIFF(
+                                                                MINUTE,
+                                                                TK.OnSiteDate,
+                                                                COALESCE (
+                                                                    TK.CompletionDate,
+                                                                    GETDATE()
+                                                                )
+                                                            )
+                                                        ) "TiempoenSitio"
+                                                        FROM
+                                                            W6TASKS AS TK
+                                                        LEFT OUTER JOIN W6UNESOURCESYSTEMS AS SS ON TK.UNESourceSystem = SS.W6Key
+                                                        LEFT OUTER JOIN W6REGIONS AS RG ON TK.Region = RG.W6Key
+                                                        LEFT OUTER JOIN W6AREA AS AR ON AR.W6Key = TK.Area
+                                                        LEFT OUTER JOIN W6ASSIGNMENTS AS AG ON AG.Task = TK.W6Key
+                                                        LEFT OUTER JOIN W6TASK_STATUSES AS STA ON TK.Status = STA.W6Key
+                                                        LEFT OUTER JOIN W6DISTRICTS AS DIS ON TK.District = DIS.W6Key
+                                                        LEFT OUTER JOIN W6TASK_TYPES AS TT ON TK.TaskType = TT.W6Key
+                                                        LEFT OUTER JOIN W6TASKTYPECATEGORY AS TTC ON TK.TaskTypeCategory = TTC.W6Key
+                                                        WHERE
+                                                            (
+                                                                (
+                                                                    TK.AppointmentStart > DATEADD(
+                                                                        DAY,
+                                                                        + 0,
+                                                                        CONVERT (DATE, SYSDATETIME())
+                                                                    )
+                                                                    AND TK.AppointmentStart < DATEADD(
+                                                                        DAY,
+                                                                        + 1,
+                                                                        CONVERT (DATE, SYSDATETIME())
+                                                                    )
+                                                                    AND STA.Name IN (
+                                                                        ${estadosclick}
+                                                                    )
+                                                                    AND TTC.Name IN (
+                                                                        'Aprovisionamiento',
+                                                                        'Aseguramiento',
+                                                                        'Aprovisionamiento BSC'
+                                                                    )
+                                                                    AND TT.Name NOT IN (
+                                                                        'Reparacion Infraestructura'
+                                                                    )
+                                                                    ${horacita}
+                                                                    AND TK.UNEMunicipio IS NOT NULL
+                                                                )
+                                                                OR (
+                                                                    AG.StartTime > DATEADD(
+                                                                        DAY,
+                                                                        + 0,
+                                                                        CONVERT (DATE, SYSDATETIME())
+                                                                    )
+                                                                    AND AG.StartTime < DATEADD(
+                                                                        DAY,
+                                                                        + 1,
+                                                                        CONVERT (DATE, SYSDATETIME())
+                                                                    )
+                                                                    AND STA.Name IN (
+                                                                        ${estadosclick}
+                                                                    )
+                                                                    AND TTC.Name IN (
+                                                                        'Mantenimiento Integral',
+                                                                        'Reconexion',
+                                                                        'Corte',
+                                                                        'Reparacion Bronce Plus Internet',
+                                                                        'Reparacion GPON Bronce Plus Internet',
+                                                                        'Reparacion Infraestructura'
+                                                                    )
+                                                                    AND TK.UNEMunicipio IS NOT NULL
+                                                                )
+                                                                OR (
+                                                                    STA.Name IN (
+                                                                        ${estadosclick}
+                                                                    )
+                                                                    AND TTC.Name IN (
+                                                                        'Mantenimiento Integral',
+                                                                        'Reconexion',
+                                                                        'Corte',
+                                                                        'Reparacion Bronce Plus Internet',
+                                                                        'Reparacion GPON Bronce Plus Internet',
+                                                                        'Reparacion Infraestructura'
+                                                                    )
+                                                                    AND TK.UNEMunicipio IS NOT NULL 
+                                                                )
+                                                            )  --ORDER BY TK.CallID, TK.CompletionDate DESC
+                                                            ) AS r
+                                                        WHERE
+                                                            r.Categoria IN ('${categoria}') 
+                                                            AND r.Region != 'Default_Pais'
+                                                            AND r.Region != 'Antioquia Default'
+                                                            AND r.Region != 'Antioquia Municipios'
+                                                        GROUP BY
+                                                            r.DateTimeExtraction,
+                                                            r.AREA,
+                                                            r.Region,
+                                                            r.Categoria
+                                                        ORDER BY
+                                                            r.AREA ASC,
+                                                            r.Region ASC;`);
 
         if (!result) {
             console.log('Error en la conexion de la BD', result);
@@ -151,9 +274,9 @@ const getDataClick = async (categoria, estadosclick, horacita, tipotarea) => {
 const processRatio = async (region, categoria, gethour) => {
 
     try {
-        
+
         let hour = 0;
-    
+
         if (gethour >= 5 &&  gethour < 6) {
             hour = 5;
         } else if (gethour >= 6 &&  gethour < 7) {
@@ -177,7 +300,7 @@ const processRatio = async (region, categoria, gethour) => {
         } else {
             hour = 18;
         }
-    
+
         let dataratio = await db['Ratio'].findAll({
             where: {
                 [Op.and]: [
@@ -191,7 +314,7 @@ const processRatio = async (region, categoria, gethour) => {
         if (dataratio.length == 0) {
             return false;
         }
-    
+
         return dataratio;
 
     } catch (error) {
@@ -293,178 +416,14 @@ const generarImagen = async (titulo, namefile, data, fecha_full) => {
             content: { imageSource: dataURI }
         })
         .then(() => `Imagen de ${namefile} creado con exito`);
-        
+
         return res;
-        
+
     } catch (error) {
         console.log(error);
     }
 }
 
-// (async () => {
-
-//     try {
-
-//         let date = new Date();
-//         let gethour = date.getHours();
-
-//         let anio = date.getFullYear();
-//         let mes = ((date.getMonth() + 1) < 10) ? '0'+(date.getMonth() + 1) : (date.getMonth() + 1);
-//         let dia = ((date.getDate()) < 10) ? '0'+(date.getDate()) : (date.getDate());
-//         let hora = ((date.getHours()) < 10) ? '0'+(date.getHours()) : (date.getHours());
-//         let minutos = ((date.getMinutes()) < 10) ? '0'+(date.getMinutes()) : (date.getMinutes());
-//         let segundos = ((date.getSeconds()) < 10) ? '0'+(date.getSeconds()) : (date.getSeconds());
-
-//         let fecha_full = `${anio}-${mes}-${dia} ${hora}:${minutos}:${segundos}`;
-
-//         let estadosclick = '';
-//         let horacita = ''
-//         let tipotarea = '';
-
-//         if (gethour >= 7 &&  gethour < 10) {
-//             estadosclick = "\'Abierto\', \'Asignado\', \'Despachado\', \'En Camino\', \'En Sitio\'";
-//             horacita = "";
-//             tipotarea = "AND TT.W6Key != 124829709";
-//             tipotarearepinf = "AND TT.W6Key = 124829709";
-//         } else if (gethour >= 10 &&  gethour < 12) {
-//             estadosclick = "\'Abierto\', \'Asignado\', \'Despachado\', \'En Camino\'";
-//             horacita = "AND TK.UNEHoraCita IN(\'HO FIJ ARM\',\'HOR FIJ MAN\',\'07:30\',\'06:00\',\'07:00\',\'AM\',\'MA\',\'MAÑANA\')";
-//             tipotarea = "AND TT.W6Key != 124829709";
-//             tipotarearepinf = "AND TT.W6Key = 124829709";
-//         } else if (gethour >= 12 &&  gethour < 13) {
-//             estadosclick = "\'Abierto\', \'Asignado\', \'Despachado\', \'En Camino\'";
-//             horacita = "";
-//             tipotarea = "AND TT.W6Key != 124829709";
-//             tipotarearepinf = "AND TT.W6Key = 124829709";
-//         } else if (gethour >= 13 &&  gethour < 14) {
-//             estadosclick = "\'Abierto\', \'Asignado\', \'Despachado\', \'En Camino\'";
-//             horacita = "";
-//             tipotarea = "AND TT.W6Key != 124829709";
-//             tipotarearepinf = "AND TT.W6Key = 124829709";
-//         } else if (gethour >= 14 &&  gethour < 15) {
-//             estadosclick = "\'Abierto\', \'Asignado\', \'Despachado\', \'En Camino\'";
-//             horacita = "";
-//             tipotarea = "AND TT.W6Key != 124829709";
-//             tipotarearepinf = "AND TT.W6Key = 124829709";
-//         } else if (gethour >= 15 &&  gethour < 16) {
-//             estadosclick = "\'Abierto\', \'Asignado\', \'Despachado\', \'En Camino\'";
-//             horacita = "";
-//             tipotarea = "AND TT.W6Key != 124829709";
-//             tipotarearepinf = "AND TT.W6Key = 124829709";
-//         } else if (gethour >= 16 &&  gethour < 17) {
-//             estadosclick = "\'Abierto\', \'Asignado\', \'Despachado\', \'En Camino\'";
-//             horacita = "";
-//             tipotarea = "AND TT.W6Key != 124829709";
-//             tipotarearepinf = "AND TT.W6Key = 124829709";
-//         } else {
-//             /* console.log('Termino el proceso');
-//             return false; */
-//         }
-
-//         const [
-//             aprovisionamiento,
-//             aprovisionamientobsc,
-//             aseguramiento,
-//             aseguramientobsc,
-//             aseguramientorepinf,
-//         ] = await Promise.all([
-//             getDataClick('Aprovisionamiento', estadosclick, horacita, tipotarea),
-//             getDataClick('Aprovisionamiento BSC', estadosclick, horacita, tipotarea),
-//             getDataClick('Aseguramiento', estadosclick, horacita, tipotarea),
-//             getDataClick('Aseguramiento BSC', estadosclick, horacita, tipotarea),
-//             getDataClick('Aseguramiento', estadosclick, horacita, tipotarearepinf),
-//         ]);
-    
-//         let dataaprovisionamiento = []
-//         for (const value of aprovisionamiento) {
-//             /* let date = new Date();
-//             let gethour = date.getHours(); */
-    
-//             let ratioesp = await processRatio(value.Region, value.Categoria, gethour)
-
-//             let ratiowait = (!ratioesp) ? 0 : ratioesp[0].ratioesperado;
-//             value.ratioesperado = ratiowait;
-//             value.validation = (value.ratio <= ratiowait) ? true : false;
-
-//             dataaprovisionamiento.push(value);
-//         }
-//         let aprov = await generarImagen('Aprovisionamiento', 'aprovisionamiento', dataaprovisionamiento, fecha_full);
-
-//         let dataaprovisionamientobsc = []
-//         for (const value of aprovisionamientobsc) {
-//             /* let date = new Date();
-//             let gethour = date.getHours(); */
-    
-//             let ratioesp = await processRatio(value.Region, value.Categoria, gethour)
-
-//             let ratiowait = (!ratioesp) ? 0 : ratioesp[0].ratioesperado;
-//             value.ratioesperado = ratiowait;
-//             value.validation = (value.ratio <= ratiowait) ? true : false;
-
-//             dataaprovisionamientobsc.push(value);
-//         }
-//         let aprovbsc = await generarImagen('Aprovisionamiento BSC', 'aprovisionamientobsc', dataaprovisionamientobsc, fecha_full);
-
-//         let dataaseguramiento = []
-//         for (const value of aseguramiento) {
-//             /* let date = new Date();
-//             let gethour = date.getHours(); */
-    
-//             let ratioesp = await processRatio(value.Region, value.Categoria, gethour)
-
-//             let ratiowait = (!ratioesp) ? 0 : ratioesp[0].ratioesperado;
-//             value.ratioesperado = ratiowait;
-//             value.validation = (value.ratio <= ratiowait) ? true : false;
-
-//             dataaseguramiento.push(value);
-//         }
-//         let aseg = await generarImagen('Aseguramiento', 'aseguramiento', dataaseguramiento, fecha_full);
-
-//         let dataaseguramientobsc = []
-//         for (const value of aseguramientobsc) {
-//             /* let date = new Date();
-//             let gethour = date.getHours(); */
-    
-//             let ratioesp = await processRatio(value.Region, value.Categoria, gethour)
-
-//             let ratiowait = (!ratioesp) ? 0 : ratioesp[0].ratioesperado;
-//             value.ratioesperado = ratiowait;
-//             value.validation = (value.ratio <= ratiowait) ? true : false;
-
-//             dataaseguramientobsc.push(value);
-//         }
-//         let asegbsc = await generarImagen('Aseguramiento BSC', 'aseguramientobsc', dataaseguramientobsc, fecha_full);
-
-//         let dataaseguramientorepinf = []
-//         for (const value of aseguramientorepinf) {
-//             /* let date = new Date();
-//             let gethour = date.getHours(); */
-    
-//             let ratioesp = await processRatio(value.Region, value.Categoria, gethour)
-
-//             let ratiowait = (!ratioesp) ? 0 : ratioesp[0].ratioesperado;
-//             value.ratioesperado = ratiowait;
-//             value.validation = (value.ratio <= ratiowait) ? true : false;
-
-//             dataaseguramientorepinf.push(value);
-//         }
-//         let asegrepinf = await generarImagen('Aseguramiento - Premisas Extendidas', 'aseguramientorepinf', dataaseguramientorepinf, fecha_full);
-
-
-//         console.log('dataaprovisionamiento', aprov);
-//         console.log('dataaprovisionamientobsc', aprovbsc);
-//         console.log('dataaseguramiento', aseg);
-//         console.log('dataaseguramientobsc', asegbsc);
-//         console.log('dataaseguramientorepinf', asegrepinf);
-
-
-        
-//     } catch (error) {
-
-//         console.log('Error ejecución:', error);
-        
-//     }
-// })();
 
 const initReporte = async () => {
 
@@ -487,43 +446,13 @@ const initReporte = async () => {
         let tipotarea = '';
 
         if (gethour >= 7 &&  gethour < 10) {
-            estadosclick = "\'Abierto\', \'Asignado\', \'Despachado\', \'En Camino\', \'En Sitio\'";
-            horacita = "";
-            tipotarea = "AND TT.W6Key != 124829709";
-            tipotarearepinf = "AND TT.W6Key = 124829709";
-        } else if (gethour >= 10 &&  gethour < 12) {
             estadosclick = "\'Abierto\', \'Asignado\', \'Despachado\', \'En Camino\'";
-            horacita = "AND TK.UNEHoraCita IN(\'HO FIJ ARM\',\'HOR FIJ MAN\',\'07:30\',\'06:00\',\'07:00\',\'AM\',\'MA\',\'MAÑANA\')";
+            horacita = "AND UNEHoraCita = \'AM\'";
             tipotarea = "AND TT.W6Key != 124829709";
-            tipotarearepinf = "AND TT.W6Key = 124829709";
-        } else if (gethour >= 12 &&  gethour < 13) {
+        }else if(gethour >= 10){
             estadosclick = "\'Abierto\', \'Asignado\', \'Despachado\', \'En Camino\'";
             horacita = "";
             tipotarea = "AND TT.W6Key != 124829709";
-            tipotarearepinf = "AND TT.W6Key = 124829709";
-        } else if (gethour >= 13 &&  gethour < 14) {
-            estadosclick = "\'Abierto\', \'Asignado\', \'Despachado\', \'En Camino\'";
-            horacita = "";
-            tipotarea = "AND TT.W6Key != 124829709";
-            tipotarearepinf = "AND TT.W6Key = 124829709";
-        } else if (gethour >= 14 &&  gethour < 15) {
-            estadosclick = "\'Abierto\', \'Asignado\', \'Despachado\', \'En Camino\'";
-            horacita = "";
-            tipotarea = "AND TT.W6Key != 124829709";
-            tipotarearepinf = "AND TT.W6Key = 124829709";
-        } else if (gethour >= 15 &&  gethour < 16) {
-            estadosclick = "\'Abierto\', \'Asignado\', \'Despachado\', \'En Camino\'";
-            horacita = "";
-            tipotarea = "AND TT.W6Key != 124829709";
-            tipotarearepinf = "AND TT.W6Key = 124829709";
-        } else if (gethour >= 16 &&  gethour < 17) {
-            estadosclick = "\'Abierto\', \'Asignado\', \'Despachado\', \'En Camino\'";
-            horacita = "";
-            tipotarea = "AND TT.W6Key != 124829709";
-            tipotarearepinf = "AND TT.W6Key = 124829709";
-        } else {
-            /* console.log('Termino el proceso');
-            return false; */
         }
 
         const [
@@ -531,20 +460,18 @@ const initReporte = async () => {
             aprovisionamientobsc,
             aseguramiento,
             aseguramientobsc,
-            aseguramientorepinf,
         ] = await Promise.all([
             getDataClick('Aprovisionamiento', estadosclick, horacita, tipotarea),
             getDataClick('Aprovisionamiento BSC', estadosclick, horacita, tipotarea),
             getDataClick('Aseguramiento', estadosclick, horacita, tipotarea),
             getDataClick('Aseguramiento BSC', estadosclick, horacita, tipotarea),
-            getDataClick('Aseguramiento', estadosclick, horacita, tipotarearepinf),
         ]);
-    
+
         let dataaprovisionamiento = []
         for (const value of aprovisionamiento) {
             /* let date = new Date();
             let gethour = date.getHours(); */
-    
+
             let ratioesp = await processRatio(value.Region, value.Categoria, gethour)
 
             let ratiowait = (!ratioesp) ? 0 : ratioesp[0].ratioesperado;
@@ -559,7 +486,7 @@ const initReporte = async () => {
         for (const value of aprovisionamientobsc) {
             /* let date = new Date();
             let gethour = date.getHours(); */
-    
+
             let ratioesp = await processRatio(value.Region, value.Categoria, gethour)
 
             let ratiowait = (!ratioesp) ? 0 : ratioesp[0].ratioesperado;
@@ -574,7 +501,7 @@ const initReporte = async () => {
         for (const value of aseguramiento) {
             /* let date = new Date();
             let gethour = date.getHours(); */
-    
+
             let ratioesp = await processRatio(value.Region, value.Categoria, gethour)
 
             let ratiowait = (!ratioesp) ? 0 : ratioesp[0].ratioesperado;
@@ -589,7 +516,7 @@ const initReporte = async () => {
         for (const value of aseguramientobsc) {
             /* let date = new Date();
             let gethour = date.getHours(); */
-    
+
             let ratioesp = await processRatio(value.Region, value.Categoria, gethour)
 
             let ratiowait = (!ratioesp) ? 0 : ratioesp[0].ratioesperado;
@@ -600,32 +527,16 @@ const initReporte = async () => {
         }
         let asegbsc = await generarImagen('Aseguramiento BSC', 'aseguramientobsc', dataaseguramientobsc, fecha_full);
 
-        let dataaseguramientorepinf = []
-        for (const value of aseguramientorepinf) {
-            /* let date = new Date();
-            let gethour = date.getHours(); */
-    
-            let ratioesp = await processRatio(value.Region, value.Categoria, gethour)
-
-            let ratiowait = (!ratioesp) ? 0 : ratioesp[0].ratioesperado;
-            value.ratioesperado = ratiowait;
-            value.validation = (value.ratio <= ratiowait) ? true : false;
-
-            dataaseguramientorepinf.push(value);
-        }
-        let asegrepinf = await generarImagen('Aseguramiento - Premisas Extendidas', 'aseguramientorepinf', dataaseguramientorepinf, fecha_full);
-
 
         console.log('dataaprovisionamiento', aprov);
         console.log('dataaprovisionamientobsc', aprovbsc);
         console.log('dataaseguramiento', aseg);
         console.log('dataaseguramientobsc', asegbsc);
-        console.log('dataaseguramientorepinf', asegrepinf);
-        
+
     } catch (error) {
 
         console.log('Error ejecución:', error);
-        
+
     }
 };
 
