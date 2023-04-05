@@ -3,7 +3,7 @@ const express = require('express');
 
 const { Client, LocalAuth, MessageMedia } = require('whatsapp-web.js');
 const { initReporte } = require('./genreportimage');
-
+const { initReportTecnico } = require('./porcentaje_tecnicos_en_sitio');
 const app = express();
 
 app.use(express.urlencoded({ extended: true }));
@@ -23,7 +23,23 @@ const sendWhitApi = async (req, res) => {
     res.send({status: 'Enviado'})
 }
 
+const sendWhitApiPorcent = async (req, res) => {
+    const { to, msg } = req.body;
+    await initReportTecnico()
+
+    let from = '120363114662627150@g.us';
+
+    //sendMessage(from, 'Reporte porcentaje tecnico');
+    //sendMedia(from, 'porcentaje/aprovisionamiento.png');
+    //sendMedia(from, 'porcentaje/aprovisionamientobsc.png');
+    //sendMedia(from, 'porcentaje/aseguramiento.png');
+    //sendMedia(from, 'porcentaje/aseguramientobsc.png');
+
+    res.send({status: 'Enviado'})
+}
+
 app.post('/sendreport', sendWhitApi);
+app.get('/sendreportPorcentaje', sendWhitApiPorcent);
 
 const client = new Client({
     puppeteer: {
