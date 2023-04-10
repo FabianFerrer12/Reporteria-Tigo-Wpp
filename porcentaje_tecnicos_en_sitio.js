@@ -5,7 +5,7 @@ const fs = require('fs');
 const mssqlDB = require('./database/conn-mssql');
 const db = require("./models");
 
-const getDataClick = async (categoria, estadosclick, horacita, tipotarea) => {
+const getDataClick = async (categoria) => {
     try {
 
         const result = await mssqlDB.dbConnectionMssql(`SELECT
@@ -14,8 +14,6 @@ const getDataClick = async (categoria, estadosclick, horacita, tipotarea) => {
         r.Region,
         r.Categoria,
         COUNT (DISTINCT(r.CallID)) AS 'cant_tareas',
-        --r.CallID,
-        --COUNT (r.CallID) AS 'cant_tareas',
         COUNT (DISTINCT(r.Tecnico)) AS 'cant_tecnico'
     FROM
         (
@@ -37,6 +35,8 @@ const getDataClick = async (categoria, estadosclick, horacita, tipotarea) => {
                 'Buga'
             WHEN DIS.Name IN ('IGUANA') THEN
                 'Antioquia Norte'
+            WHEN RG.Name IN ('Otros_Municipios_Norte') THEN
+                'Guajira'
             WHEN DIS.Name IN ('TULUA') THEN
                 'Tulua'
             WHEN DIS.Name IN (
@@ -47,25 +47,48 @@ const getDataClick = async (categoria, estadosclick, horacita, tipotarea) => {
                 'Cartago'
             WHEN DIS.Name IN ('MICROZONA 20') THEN
                 'Risaralda'
+            WHEN RG.Name IN (
+                'Cundinamarca Sur',
+                'Cundinamarca Default',
+                'Cundinamarca Norte'
+            ) THEN
+                'Bogota'
             ELSE
                 RG.Name
             END AS Region,
             CASE
-        WHEN AR.Name IN ('Default', 'Default_Pais') THEN
-            'Noroccidente'
-        WHEN AR.Name IN ('Norte') THEN
-            'Costa'
-        WHEN AR.Name = 'Noroccidente'
-        AND RG.Name IN (
+        WHEN RG.Name IN (
             'Cundinamarca Sur',
             'Cundinamarca Default',
             'Cundinamarca Norte'
         ) THEN
-            'Centro'
+            'Bogota'
+        WHEN RG.Name IN ('Meta') THEN
+            'Sur'
+        WHEN AR.Name IN ('Default', 'Default_Pais') THEN
+            'Noroccidente'
+        WHEN AR.Name IN ('Norte') THEN
+            'Costa'
+        WHEN RG.Name IN (
+            'Nariño',
+            'Buga',
+            'Cauca',
+            'Tulua',
+            'Valle',
+            'Caldas',
+            'Cartago',
+            'Quindio',
+            'Risaralda',
+            'Tolima',
+            'Valle Quindío'
+        ) THEN
+            'Occidente'
         WHEN RG.Name IN (
             'Antioquia Municipios',
             'Antioquia_Edatel'
         ) THEN
+            'Edatel'
+        WHEN RG.Name IN ('Default_Pais') THEN
             'Edatel'
         ELSE
             AR.Name
@@ -153,7 +176,6 @@ const getDataClick = async (categoria, estadosclick, horacita, tipotarea) => {
                     'Aprovisionamiento',
                     'Aseguramiento'
                 )
-                AND TK.UNEFechaCita != 'TD'
             )
             OR (
                 TK.AppointmentStart > DATEADD(
@@ -167,8 +189,10 @@ const getDataClick = async (categoria, estadosclick, horacita, tipotarea) => {
                     CONVERT (DATE, SYSDATETIME())
                 )
                 AND STA.Name IN (
-                    'Incompleto',
-                    'Finalizada',
+                    'Abierto',
+                    'Asignado',
+                    'Despachado',
+                    'En Camino',
                     'En Sitio'
                 )
                 AND TTC.Name IN (
@@ -189,9 +213,9 @@ const getDataClick = async (categoria, estadosclick, horacita, tipotarea) => {
                     CONVERT (DATE, SYSDATETIME())
                 )
                 AND STA.Name IN (
-                    'Incompleto',
-                    'Finalizada',
-                    'En Sitio'
+                    'Asignado',
+                    'Despachado',
+                    'En Camino'
                 )
                 AND TTC.Name IN (
                     'Mantenimiento Integral',
@@ -200,8 +224,8 @@ const getDataClick = async (categoria, estadosclick, horacita, tipotarea) => {
                 )
             )
             OR (
-                --STA.Name IN ('Abierto')
-                TTC.Name IN (
+                STA.Name IN ('Abierto')
+                AND TTC.Name IN (
                     'Mantenimiento Integral',
                     'Reconexion',
                     'Corte'
@@ -210,10 +234,11 @@ const getDataClick = async (categoria, estadosclick, horacita, tipotarea) => {
         )
         ) AS r
     WHERE
-        r.Categoria = 'Aseguramiento'
+        r.Categoria = '${categoria}'
+    AND r.Estado NOT IN ('Finalizada', 'Incompleto')
     AND r.Region != 'Default_Pais'
     AND r.Region != 'Antioquia Default'
-    AND r.Region != 'Antioquia Municipios' --AND r.Region = 'Cundinamarca Norte'
+    AND r.Region != 'Antioquia Municipios'
     GROUP BY
         r.DateTimeExtraction,
         r.AREA,
@@ -355,30 +380,16 @@ const initReportTecnico = async () => {
 
         let fecha_full = `${anio}-${mes}-${dia} ${hora}:${minutos}:${segundos}`;
 
-        let estadosclick = '';
-        let horacita = ''
-        let tipotarea = '';
-
-        if (gethour >= 7 &&  gethour < 10) {
-            estadosclick = "\'Abierto\', \'Asignado\', \'Despachado\', \'En Camino\'";
-            horacita = "AND UNEHoraCita = \'AM\'";
-            tipotarea = "AND TT.W6Key != 124829709";
-        }else if(gethour >= 10){
-            estadosclick = "\'Abierto\', \'Asignado\', \'Despachado\', \'En Camino\'";
-            horacita = "";
-            tipotarea = "AND TT.W6Key != 124829709";
-        }
-
         const [
             aprovisionamiento,
             aprovisionamientobsc,
             aseguramiento,
             aseguramientobsc,
         ] = await Promise.all([
-            getDataClick('Aprovisionamiento', estadosclick, horacita, tipotarea),
-            getDataClick('Aprovisionamiento BSC', estadosclick, horacita, tipotarea),
-            getDataClick('Aseguramiento', estadosclick, horacita, tipotarea),
-            getDataClick('Aseguramiento BSC', estadosclick, horacita, tipotarea),
+            getDataClick('Aprovisionamiento'),
+            getDataClick('Aprovisionamiento BSC'),
+            getDataClick('Aseguramiento'),
+            getDataClick('Aseguramiento BSC'),
         ]);
 
         let dataaprovisionamiento = []
