@@ -2,8 +2,8 @@ const { Op } = require("sequelize");
 const nodeHtmlToImage = require('node-html-to-image');
 const fs = require('fs');
 
-const mssqlDB = require('./database/conn-mssql');
-const db = require("./models");
+const mssqlDB = require('../database/conn-mssql');
+const db = require("../models");
 
 const getDataClick = async (categoria) => {
     try {

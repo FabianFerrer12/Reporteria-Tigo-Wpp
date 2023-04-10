@@ -2,10 +2,9 @@ const qrcode = require('qrcode-terminal');
 const express = require('express');
 
 const { Client, LocalAuth, MessageMedia } = require('whatsapp-web.js');
-const { initReporte } = require('./genreportimage');
-const {initReportePedidos} =require('./PedidosAbiertosHoy');
-
-const { initReportTecnico } = require('./porcentaje_tecnicos_en_sitio');
+const { initReporte } = require('./Reportes/genreportimage');
+const {initReportePedidos} =require('./Reportes/PedidosAbiertosHoy');
+const { initReportTecnico } = require('./Reportes/porcentaje_tecnicos_en_sitio');
 const app = express();
 
 app.use(express.urlencoded({ extended: true }));
