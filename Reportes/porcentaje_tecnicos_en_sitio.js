@@ -333,13 +333,22 @@ const generarImagen = async (titulo, namefile, data, fecha_full) => {
             <tbody>`;
 
             data.forEach(val => {
-                let estado = (val.validation) ? '<i class="fa fa-check" style="color:green;"></i>' : '<i class="fa fa-times" style="color:red;"></i>';
+                
+                let n = Math.round((val.cant_tecnico / val.cant_tareas) * 100);
+                let color;
+                if(n >= 95){
+                    color = `#198754`;
+                }else if(n >= 85 && n < 95){
+                    color = `#ffc107`;
+                }else if (n < 85){
+                    color = `#bb2d3b`
+                }
                 contentHtml += `<tr>
                     <td>${val.AREA}</td>
                     <td>${val.Region}</td>
                     <td class="text-right">${val.cant_tareas}</td>
                     <td class="text-right">${val.cant_tecnico}</td>
-                    <td class="text-right">${Math.round((val.cant_tecnico / val.cant_tareas) * 100)}%</td>
+                    <td class="text-right" style="background: ${color}">${n}%</td>
                 </tr>`;
             });
 
