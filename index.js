@@ -55,9 +55,8 @@ const sendWhitApiPorcent = async (req, res) => {
     res.send({status: 'Enviado'})
 }
 
-app.post('/sendreport', sendWhitApi);
+app.get('/sendreport', sendWhitApi);
 app.get('/sendreportPorcentaje', sendWhitApiPorcent);
-
 app.get('/sendPedidosHoy', sendPedidosHoy);
 
 const client = new Client({
