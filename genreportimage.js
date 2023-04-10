@@ -411,7 +411,7 @@ const generarImagen = async (titulo, namefile, data, fecha_full) => {
         </html>`;
 
         let res = await nodeHtmlToImage({
-            output: `./images/${namefile}.png`,
+            output: `./images/Inicio y seguimiento/${namefile}.png`,
             html: contentHtml,
             content: { imageSource: dataURI }
         })

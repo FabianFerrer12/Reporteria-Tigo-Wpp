@@ -3,6 +3,7 @@ const express = require('express');
 
 const { Client, LocalAuth, MessageMedia } = require('whatsapp-web.js');
 const { initReporte } = require('./genreportimage');
+const {initReportePedidos} =require('./PedidosAbiertosHoy');
 
 const app = express();
 
@@ -14,16 +15,33 @@ const sendWhitApi = async (req, res) => {
 
     let from = '120363114662627150@g.us';
 
-    sendMessage(from, 'Reporte');
-    sendMedia(from, 'aprovisionamiento.png');
-    sendMedia(from, 'aprovisionamientobsc.png');
-    sendMedia(from, 'aseguramiento.png');
-    sendMedia(from, 'aseguramientobsc.png');
+    sendMessage(from, 'Reporte Inicio y seguimiento Operacion Nacional');
+    sendMedia(from, 'Inicio y seguimiento/aprovisionamiento.png');
+    sendMedia(from, 'Inicio y seguimiento/aprovisionamientobsc.png');
+    sendMedia(from, 'Inicio y seguimiento/aseguramiento.png');
+    sendMedia(from, 'Inicio y seguimiento/aseguramientobsc.png');
+
+    res.send({status: 'Enviado'})
+}
+
+const sendPedidosHoy = async(req,res)=>{
+    const { to, msg } = req.body;
+    await initReportePedidos()
+
+    let from = '120363114662627150@g.us';
+
+    sendMessage(from, 'Pedidos en estado abierto con agenda para hoy');
+    sendMedia(from, 'PedidosAbiertosHoy/aprovisionamiento.png');
+    sendMedia(from, 'PedidosAbiertosHoy/aprovisionamientobsc.png');
+    sendMedia(from, 'PedidosAbiertosHoy/aseguramiento.png');
+    sendMedia(from, 'PedidosAbiertosHoy/aseguramientobsc.png');
 
     res.send({status: 'Enviado'})
 }
 
 app.post('/sendreport', sendWhitApi);
+
+app.get('/sendPedidosHoy', sendPedidosHoy);
 
 const client = new Client({
     puppeteer: {
