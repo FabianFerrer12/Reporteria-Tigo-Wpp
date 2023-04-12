@@ -446,10 +446,14 @@ const initReporte = async () => {
         let tipotarea = '';
 
         if (gethour >= 7 &&  gethour < 10) {
+            estadosclick = "\'Abierto\', \'Asignado\', \'Despachado\', \'En Camino\' , \'En Sitio\'";
+            horacita = "";
+            tipotarea = "AND TT.W6Key != 124829709";
+        }else if(gethour >= 10 && gethour < 11){
             estadosclick = "\'Abierto\', \'Asignado\', \'Despachado\', \'En Camino\'";
             horacita = "AND UNEHoraCita = \'AM\'";
             tipotarea = "AND TT.W6Key != 124829709";
-        }else if(gethour >= 10){
+        }else if(gethour >= 11){
             estadosclick = "\'Abierto\', \'Asignado\', \'Despachado\', \'En Camino\'";
             horacita = "";
             tipotarea = "AND TT.W6Key != 124829709";

@@ -13,17 +13,23 @@ const getDataClick = async (categoria) => {
         r.AREA,
         r.Region,
         r.Categoria,
-        COUNT (DISTINCT(r.CallID)) AS 'cant_tareas',
-        COUNT (DISTINCT(r.Tecnico)) AS 'cant_tecnico'
+        COUNT (DISTINCT r.Tecnico) AS cant_tareas,
+        COUNT (
+            DISTINCT CASE                 
+            WHEN r.Estado IN (
+                'Finalizada',
+                'En Sitio',
+                'Incompleto'
+            )                  THEN
+                r.Tecnico               
+            END
+        ) AS cant_tecnico
     FROM
         (
             SELECT DISTINCT
                 GETDATE() DateTimeExtraction,
                 TK.CallID,
-                TK.UNEPedido,
                 STA.Name AS Estado,
-                DIS.Name AS Distrito,
-                COALESCE (TK.UNEMunicipio, DIS.Name) AS UNEMunicipio,
                 CASE
             WHEN DIS.Name IN (
                 'BARRANC',
@@ -102,53 +108,7 @@ const getDataClick = async (categoria) => {
     ELSE
         TTC.Name
     END AS Categoria,
-     TT.Name AS TipoTarea,
-     SS.Name AS Sistema,
-     CASE
-    WHEN UPPER (TK.[UNEHoraCita]) IN (
-        'HO FIJ ARM',
-        'HOR FIJ MAN',
-        '07:30',
-        '06:00',
-        '07:00',
-        'AM',
-        'MA',
-        'MAÑANA'
-    ) THEN
-        'AM'
-    WHEN UPPER (TK.[UNEHoraCita]) IN ('PM', '18:00', 'TARDE') THEN
-        'PM'
-    ELSE
-        'TD'
-    END AS UNEHoraCita,
-     TK.UNEFechaCita,
-     TK.AppointmentStart AS FechaInicioCita,
-     TK.AppointmentFinish AS FechaFinCita,
-     AG.StartTime AS FechaInicioAsignado,
-     AG.FinishTime AS FechaFinAsignado,
-     TK.Duration,
-     TK.UNETecnologias,
-     TK.UNESegmento,
-     TK.UNEUENcalculada,
-     TK.UNEAgendamientos UNEAgendamientoClick,
-     TK.CompletionDate AS FechaCumplido,
-     TK.CancellationDate AS FechaCancelado,
-     TK.TimeModified AS FechaModificado,
-     TK.EngineerID AS Tecnico,
-     TK.EngineerName,
-     TK.UNEProvisioner,
-     TK.OnSiteDate,
-     TK.AppointmentStart,
-     (
-        DATEDIFF(
-            MINUTE,
-            TK.OnSiteDate,
-            COALESCE (
-                TK.CompletionDate,
-                GETDATE()
-            )
-        )
-    ) "TiempoenSitio"
+     TK.EngineerID AS Tecnico
     FROM
         W6TASKS AS TK
     LEFT OUTER JOIN W6UNESOURCESYSTEMS AS SS ON TK.UNESourceSystem = SS.W6Key
@@ -235,7 +195,6 @@ const getDataClick = async (categoria) => {
         ) AS r
     WHERE
         r.Categoria = '${categoria}'
-    AND r.Estado NOT IN ('Finalizada', 'Incompleto')
     AND r.Region != 'Default_Pais'
     AND r.Region != 'Antioquia Default'
     AND r.Region != 'Antioquia Municipios'

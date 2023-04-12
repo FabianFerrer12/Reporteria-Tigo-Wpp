@@ -45,11 +45,11 @@ const sendWhitApiPorcent = async (req, res) => {
 
     let from = '120363114662627150@g.us';
 
-    sendMessage(from, 'Reporte porcentaje tecnico');
-    sendMedia(from, 'porcentaje/aprovisionamiento.png');
-    sendMedia(from, 'porcentaje/aprovisionamientobsc.png');
-    sendMedia(from, 'porcentaje/aseguramiento.png');
-    sendMedia(from, 'porcentaje/aseguramientobsc.png');
+    // sendMessage(from, 'Reporte porcentaje tecnico');
+    // sendMedia(from, 'porcentaje/aprovisionamiento.png');
+    // sendMedia(from, 'porcentaje/aprovisionamientobsc.png');
+    // sendMedia(from, 'porcentaje/aseguramiento.png');
+    // sendMedia(from, 'porcentaje/aseguramientobsc.png');
 
     res.send({status: 'Enviado'})
 }
