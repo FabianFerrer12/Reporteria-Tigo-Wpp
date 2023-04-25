@@ -1,9 +1,7 @@
-const { Op } = require("sequelize");
 const nodeHtmlToImage = require('node-html-to-image');
 const fs = require('fs');
-
 const mssqlDB = require('../database/conn-mssql');
-const db = require("../models");
+
 
 const getDataClick = async (categoria) => {
     try {
@@ -206,7 +204,6 @@ const getDataClick = async (categoria) => {
     ORDER BY
         r.AREA ASC,
         r.Region ASC;`);
-
         if (!result) {
             console.log('Error en la conexion de la BD', result);
             return false;

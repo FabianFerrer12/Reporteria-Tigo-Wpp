@@ -294,9 +294,9 @@ const processRatio = async (region, categoria, gethour) => {
         } else if (gethour >= 15 &&  gethour < 16) {
             hour = 15;
         } else if (gethour >= 16 &&  gethour < 17) {
-            hour = 17;
+            hour = 16;
         } else if (gethour >= 17 &&  gethour < 18) {
-            hour = 18;
+            hour = 17;
         } else {
             hour = 18;
         }

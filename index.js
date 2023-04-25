@@ -16,7 +16,16 @@ const sendWhitApi = async (req, res) => {
 
     let from = '120363114662627150@g.us';
 
-    sendMessage(from, 'Reporte Inicio y seguimiento Operacion Nacional');
+    let date = new Date();
+    let gethour = date.getHours();
+
+    if(gethour == 7){
+        sendMessage(from, 'Reporte inicio operacion nacional');
+    }else{
+        sendMessage(from, 'Reporte seguimiento operacion nacional');
+    }
+
+    
     sendMedia(from, 'Inicio y seguimiento/aprovisionamiento.png');
     sendMedia(from, 'Inicio y seguimiento/aprovisionamientobsc.png');
     sendMedia(from, 'Inicio y seguimiento/aseguramiento.png');
@@ -46,30 +55,24 @@ const sendWhitApiPorcent = async (req, res) => {
 
     let from = '120363114662627150@g.us';
 
-    // sendMessage(from, 'Reporte porcentaje tecnico');
-    // sendMedia(from, 'porcentaje/aprovisionamiento.png');
-    // sendMedia(from, 'porcentaje/aprovisionamientobsc.png');
-    // sendMedia(from, 'porcentaje/aseguramiento.png');
-    // sendMedia(from, 'porcentaje/aseguramientobsc.png');
+    sendMessage(from, 'Reporte porcentaje tecnico');
+    sendMedia(from, 'porcentaje/aprovisionamiento.png');
+    sendMedia(from, 'porcentaje/aprovisionamientobsc.png');
+    sendMedia(from, 'porcentaje/aseguramiento.png');
+    sendMedia(from, 'porcentaje/aseguramientobsc.png');
 
     res.send({status: 'Enviado'})
 }
 
 const sendDemorasEnSitio = async (req, res) => {
     const { to, msg } = req.body;
+
     await initReporteDemorasEnSitio()
-
     let from = '120363114662627150@g.us';
-
-    // sendMessage(from, 'Reporte porcentaje tecnico');
-    // sendMedia(from, 'porcentaje/aprovisionamiento.png');
-    // sendMedia(from, 'porcentaje/aprovisionamientobsc.png');
-    // sendMedia(from, 'porcentaje/aseguramiento.png');
-    // sendMedia(from, 'porcentaje/aseguramientobsc.png');
-
+    sendMessage(from, 'Reporte demoras en sitio');
+    sendMedia(from, 'DemorasEnSitio/Reporte_Tecnicos_Demora_En_Sito.xlsx');
     res.send({status: 'Enviado'})
 }
-
 
 app.get('/sendreport', sendWhitApi);
 app.get('/sendreportPorcentaje', sendWhitApiPorcent);
@@ -78,8 +81,7 @@ app.get('/sendDemoras', sendDemorasEnSitio);
 
 const client = new Client({
     puppeteer: {
-        headless: false,
-        executablePath: 'C:/Program Files/Google/Chrome/Application/chrome.exe',
+        headless: true
     },
     authStrategy: new LocalAuth({
         dataPath: './wwebjs_auth_local'
@@ -130,6 +132,6 @@ client.on('auth_failure', () => {
 
 client.initialize();
 
-app.listen(9000, () => {
-    console.log('API LEVANTADO PORT: 9000');
+app.listen(9001, () => {
+    console.log('API LEVANTADO PORT: 9001');
 })
