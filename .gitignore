@@ -1,5 +1,9 @@
 DS_Store
 ._*
 node_modules
-images/*.png
+images/DemorasEnSitio/
+images/Inicio y seguimiento/
+images/PedidosAbiertosHoy/
+images/porcentaje/
+images/RGUs/
 wwebjs_auth_local/session

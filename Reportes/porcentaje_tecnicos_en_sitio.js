@@ -1,12 +1,13 @@
-const nodeHtmlToImage = require('node-html-to-image');
-const fs = require('fs');
-const mssqlDB = require('../database/conn-mssql');
+const { Op } = require("sequelize");
+const nodeHtmlToImage = require("node-html-to-image");
+const fs = require("fs");
 
+const mssqlDB = require("../database/conn-mssql");
+const db = require("../models");
 
 const getDataClick = async (categoria) => {
-    try {
-
-        const result = await mssqlDB.dbConnectionMssql(`SELECT
+  try {
+    const result = await mssqlDB.dbConnectionMssql(`SELECT
         r.DateTimeExtraction,
         r.AREA,
         r.Region,
@@ -204,33 +205,31 @@ const getDataClick = async (categoria) => {
     ORDER BY
         r.AREA ASC,
         r.Region ASC;`);
-        if (!result) {
-            console.log('Error en la conexion de la BD', result);
-            return false;
-        }
-
-        if (result.recordset.length == 0) {
-            console.log('Sin datos para listar', result.recordset.length);
-            return false;
-        }
-
-        let res = result.recordset;
-
-        return res;
-    } catch (error) {
-        console.log('ERROR: ', error);
+    if (!result) {
+      console.log("Error en la conexion de la BD", result);
+      return false;
     }
-}
+
+    if (result.recordset.length == 0) {
+      console.log("Sin datos para listar", result.recordset.length);
+      return false;
+    }
+
+    let res = result.recordset;
+
+    return res;
+  } catch (error) {
+    console.log("ERROR: ", error);
+  }
+};
 
 const generarImagen = async (titulo, namefile, data, fecha_full) => {
+  try {
+    const image = fs.readFileSync("./assets/LogoTigoBlanco.png");
+    const base64Image = new Buffer.from(image).toString("base64");
+    const dataURI = "data:image/jpeg;base64," + base64Image;
 
-    try {
-
-        const image = fs.readFileSync('./assets/LogoTigoBlanco.png');
-        const base64Image = new Buffer.from(image).toString('base64');
-        const dataURI = 'data:image/jpeg;base64,' + base64Image
-
-        let contentHtml = `<!DOCTYPE html>
+    let contentHtml = `<!DOCTYPE html>
         <html>
         <head>
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
@@ -288,116 +287,140 @@ const generarImagen = async (titulo, namefile, data, fecha_full) => {
         </thead>
             <tbody>`;
 
-            data.forEach(val => {
-                
-                let n = Math.round((val.cant_tecnico / val.cant_tareas) * 100);
-                let color;
-                if(n >= 95){
-                    color = `#198754`;
-                }else if(n >= 85 && n < 95){
-                    color = `#ffc107`;
-                }else if (n < 85){
-                    color = `#bb2d3b`
-                }
-                contentHtml += `<tr>
+    data.forEach((val) => {
+      let n = Math.round((val.cant_tecnico / val.cant_tareas) * 100);
+      let color;
+      if (n >= 95) {
+        color = `#198754`;
+      } else if (n >= 85 && n < 95) {
+        color = `#ffc107`;
+      } else if (n < 85) {
+        color = `#bb2d3b`;
+      }
+      contentHtml += `<tr>
                     <td>${val.AREA}</td>
                     <td>${val.Region}</td>
                     <td class="text-right">${val.cant_tareas}</td>
                     <td class="text-right">${val.cant_tecnico}</td>
                     <td class="text-right" style="background: ${color}">${n}%</td>
                 </tr>`;
-            });
+    });
 
-        contentHtml += `</tbody>
+    contentHtml += `</tbody>
         </table>
         
         </body>
         </html>`;
 
-        let res = await nodeHtmlToImage({
-            output: `./images/porcentaje/${namefile}.png`,
-            html: contentHtml,
-            content: { imageSource: dataURI }
-        })
-        .then(() => `Imagen de ${namefile} creado con exito`);
+    let res = await nodeHtmlToImage({
+      output: `./images/porcentaje/${namefile}.png`,
+      html: contentHtml,
+      content: { imageSource: dataURI },
+    }).then(() => `Imagen de ${namefile} creado con exito`);
 
-        return res;
-
-    } catch (error) {
-        console.log(error);
-    }
-}
-
+    return res;
+  } catch (error) {
+    console.log(error);
+  }
+};
 
 const initReportTecnico = async () => {
+  try {
+    let date = new Date();
+    let gethour = date.getHours();
 
-    try {
+    let anio = date.getFullYear();
+    let mes =
+      date.getMonth() + 1 < 10
+        ? "0" + (date.getMonth() + 1)
+        : date.getMonth() + 1;
+    let dia = date.getDate() < 10 ? "0" + date.getDate() : date.getDate();
+    let hora = date.getHours() < 10 ? "0" + date.getHours() : date.getHours();
+    let minutos =
+      date.getMinutes() < 10 ? "0" + date.getMinutes() : date.getMinutes();
+    let segundos =
+      date.getSeconds() < 10 ? "0" + date.getSeconds() : date.getSeconds();
 
-        let date = new Date();
-        let gethour = date.getHours();
+    let fecha_full = `${anio}-${mes}-${dia} ${hora}:${minutos}:${segundos}`;
 
-        let anio = date.getFullYear();
-        let mes = ((date.getMonth() + 1) < 10) ? '0'+(date.getMonth() + 1) : (date.getMonth() + 1);
-        let dia = ((date.getDate()) < 10) ? '0'+(date.getDate()) : (date.getDate());
-        let hora = ((date.getHours()) < 10) ? '0'+(date.getHours()) : (date.getHours());
-        let minutos = ((date.getMinutes()) < 10) ? '0'+(date.getMinutes()) : (date.getMinutes());
-        let segundos = ((date.getSeconds()) < 10) ? '0'+(date.getSeconds()) : (date.getSeconds());
+    const [
+      aprovisionamiento,
+      aprovisionamientobsc,
+      aseguramiento,
+      aseguramientobsc,
+    ] = await Promise.all([
+      getDataClick("Aprovisionamiento"),
+      getDataClick("Aprovisionamiento BSC"),
+      getDataClick("Aseguramiento"),
+      getDataClick("Aseguramiento BSC"),
+    ]);
 
-        let fecha_full = `${anio}-${mes}-${dia} ${hora}:${minutos}:${segundos}`;
-
-        const [
-            aprovisionamiento,
-            aprovisionamientobsc,
-            aseguramiento,
-            aseguramientobsc,
-        ] = await Promise.all([
-            getDataClick('Aprovisionamiento'),
-            getDataClick('Aprovisionamiento BSC'),
-            getDataClick('Aseguramiento'),
-            getDataClick('Aseguramiento BSC'),
-        ]);
-
-        let dataaprovisionamiento = []
-        for (const value of aprovisionamiento) {
-
-            dataaprovisionamiento.push(value);
-        }
-        let aprov = await generarImagen('Porcentaje tecnicos en sitio Aprovisionamiento', 'aprovisionamiento', dataaprovisionamiento, fecha_full);
-
-        let dataaprovisionamientobsc = []
-        for (const value of aprovisionamientobsc) {
-
-            dataaprovisionamientobsc.push(value);
-        }
-        let aprovbsc = await generarImagen('Porcentaje tecnicos en sitio Aprovisionamiento BSC', 'aprovisionamientobsc', dataaprovisionamientobsc, fecha_full);
-
-        let dataaseguramiento = []
-        for (const value of aseguramiento) {
-
-            dataaseguramiento.push(value);
-        }
-        let aseg = await generarImagen(' Porcentaje tecnicos en sitio Aseguramiento', 'aseguramiento', dataaseguramiento, fecha_full);
-
-        let dataaseguramientobsc = []
-        for (const value of aseguramientobsc) {
-
-            dataaseguramientobsc.push(value);
-        }
-        let asegbsc = await generarImagen('Porcentaje tecnicos en sitio Aseguramiento BSC', 'aseguramientobsc', dataaseguramientobsc, fecha_full);
-
-
-        console.log('dataaprovisionamiento', aprov);
-        console.log('dataaprovisionamientobsc', aprovbsc);
-        console.log('dataaseguramiento', aseg);
-        console.log('dataaseguramientobsc', asegbsc);
-
-    } catch (error) {
-
-        console.log('Error ejecución:', error);
-
+    let dataaprovisionamiento = [];
+    for (const value of aprovisionamiento) {
+      dataaprovisionamiento.push(value);
     }
+    let aprov;
+    if (dataaprovisionamiento) {
+      aprov = await generarImagen(
+        "Porcentaje tecnicos en sitio Aprovisionamiento",
+        "aprovisionamiento",
+        dataaprovisionamiento,
+        fecha_full
+      );
+    }
+
+    let dataaprovisionamientobsc = [];
+    for (const value of aprovisionamientobsc) {
+      dataaprovisionamientobsc.push(value);
+    }
+    let aprovbsc;
+    if (dataaprovisionamientobsc) {
+      aprovbsc = await generarImagen(
+        "Porcentaje tecnicos en sitio Aprovisionamiento BSC",
+        "aprovisionamientobsc",
+        dataaprovisionamientobsc,
+        fecha_full
+      );
+    }
+
+    let dataaseguramiento = [];
+    for (const value of aseguramiento) {
+      dataaseguramiento.push(value);
+    }
+    let aseg;
+
+    if (dataaseguramiento) {
+      aseg = await generarImagen(
+        " Porcentaje tecnicos en sitio Aseguramiento",
+        "aseguramiento",
+        dataaseguramiento,
+        fecha_full
+      );
+    }
+
+    let dataaseguramientobsc = [];
+    for (const value of aseguramientobsc) {
+      dataaseguramientobsc.push(value);
+    }
+    let asegbsc;
+    if (dataaseguramientobsc) {
+      asegbsc = await generarImagen(
+        "Porcentaje tecnicos en sitio Aseguramiento BSC",
+        "aseguramientobsc",
+        dataaseguramientobsc,
+        fecha_full
+      );
+    }
+
+    console.log("dataaprovisionamiento", aprov);
+    console.log("dataaprovisionamientobsc", aprovbsc);
+    console.log("dataaseguramiento", aseg);
+    console.log("dataaseguramientobsc", asegbsc);
+  } catch (error) {
+    console.log("Error ejecución:", error);
+  }
 };
 
 module.exports = {
-    initReportTecnico
-}
+  initReportTecnico,
+};

@@ -1,12 +1,11 @@
-const ObjectsToCsv = require('objects-to-csv');
-const Excel = require('exceljs');
-const ExcelJS = require('exceljs');
-const mssqlDB = require('../database/conn-mssql');
+const ObjectsToCsv = require("objects-to-csv");
+const Excel = require("exceljs");
+const ExcelJS = require("exceljs");
+const mssqlDB = require("../database/conn-mssql");
 
 const getDataClick = async () => {
-    try {
-
-        const result = await mssqlDB.dbConnectionMssql(`
+  try {
+    const result = await mssqlDB.dbConnectionMssql(`
 
         SELECT R.Region,R.EngineerID AS 'Cedula',R.EngineerName AS 'Nombre', r.CallID AS 'Tarea',
 (CASE WHEN (R.DiagnosticoFinal = 'OK' OR R.DiagnosticoFinal = 'En progreso') AND(R.RequierePrueba = 0 OR R.RequierePrueba = -1) THEN 0 WHEN (R.DiagnosticoFinal = 'ERROR' OR R.DiagnosticoFinal = 'Timeout') AND (R.RequierePrueba = 0 OR R.RequierePrueba = -1) THEN 1 WHEN R.DiagnosticoFinal IS NULL AND R.RequierePrueba = 0 THEN -3 WHEN R.DiagnosticoFinal IS NULL AND R.RequierePrueba = -1 THEN -2 ELSE -4 END) AS TYD_Categoria2, 
@@ -40,25 +39,23 @@ WHERE R.Tiempoensitio >120 AND (R.DiagnosticoFinal = 'OK' OR R.RequierePrueba = 
 GROUP BY r.CallID,R.EngineerID,R.EngineerName, R.Region,R.OnSiteDate,R.CompletionDate, R.DiagnosticoFinal, R.RequierePrueba, R.Proceso, R.TiempoenSitio
 ORDER BY R.Region, R.EngineerName ASC ;`);
 
-        if (!result) {
-            console.log('Error en la conexion de la BD', result);
-            return false;
-        }
-
-        if (result.recordset.length == 0) {
-            console.log('Sin datos para listar', result.recordset.length);
-            return false;
-        }
-
-        let res = result.recordset;
-
-        return res;
-    } catch (error) {
-        console.log('ERROR: ', error);
+    if (!result) {
+      console.log("Error en la conexion de la BD", result);
+      return false;
     }
-}
 
+    if (result.recordset.length == 0) {
+      console.log("Sin datos para listar", result.recordset.length);
+      return false;
+    }
 
+    let res = result.recordset;
+
+    return res;
+  } catch (error) {
+    console.log("ERROR: ", error);
+  }
+};
 
 // const generarImagen = async (titulo, namefile, data, fecha_full) => {
 
@@ -178,86 +175,77 @@ ORDER BY R.Region, R.EngineerName ASC ;`);
 //     }
 // }
 
-const generarExcel = async(data)=>{
+const generarExcel = async (data) => {
+  const headers = [
+    { header: "Region", key: "Region", width: 15 },
+    { header: "Cedula", key: "Cedula", width: 15 },
+    { header: "Nombre", key: "Nombre", width: 50 },
+    { header: "Tarea", key: "Tarea", width: 15 },
+    { header: "Tiempo En Sitio", key: "TiempoEnSitio", width: 15 },
+    { header: "TYD_Categoria2", key: "TYD_Categoria2", width: 15 },
+    { header: "Ingreso_EQ", key: "Ingreso_EQ", width: 15 },
+  ];
 
-    const headers = [
-        { header: 'Region', key: 'Region', width: 15 },
-        { header: 'Cedula', key: 'Cedula', width: 15 },
-        { header: 'Nombre', key: 'Nombre', width: 50 },
-        { header: 'Tarea', key: 'Tarea', width: 15 },
-        { header: 'Tiempo En Sitio', key: 'TiempoEnSitio', width: 15 },
-        { header: 'TYD_Categoria2', key: 'TYD_Categoria2', width: 15 },
-        { header: 'Ingreso_EQ', key: 'Ingreso_EQ', width: 15 },
-    ]
+  const workbook = new ExcelJS.Workbook();
+  const worksheet = workbook.addWorksheet("My Sheet");
 
+  worksheet.columns = headers;
 
-    const workbook = new ExcelJS.Workbook();
-    const worksheet = workbook.addWorksheet('My Sheet');
+  itemToSave = {};
+  itemsToSave = [];
+  data.forEach((data) => {
+    let segundosP = data.Segundos;
+    let segundos = Math.round(segundosP % 0x3c).toString();
+    let horas = Math.floor(segundosP / 0xe10).toString();
+    let minutos = (Math.floor(segundosP / 0x3c) % 0x3c).toString();
+    let tiempo = horas + ":" + minutos + ":" + segundos;
+    let tyd = "";
 
-    worksheet.columns = headers;
+    if (data.TYD_Categoria2 == -3) {
+      tyd = "No requiere T&D";
+    } else if (data.TYD_Categoria2 == 0) {
+      tyd = "OK";
+    }
 
+    let eq = "";
+    if (data.Cantidad_Equipos_Activados > 1) {
+      eq = "SI";
+    } else {
+      eq = "NO";
+    }
+
+    itemToSave.Region = data.Region;
+    itemToSave.Cedula = data.Cedula;
+    itemToSave.Nombre = data.Nombre;
+    itemToSave.Tarea = data.Tarea;
+    itemToSave.TiempoEnSitio = tiempo;
+    itemToSave.TYD_Categoria2 = tyd;
+    itemToSave.Ingreso_EQ = eq;
+    itemsToSave.push(itemToSave);
     itemToSave = {};
-        itemsToSave = [];   
-        data.forEach(data=>{
-            let segundosP = data.Segundos
-            let segundos = (Math.round(segundosP % 0x3C)).toString();
-            let horas    = (Math.floor(segundosP / 0xE10)).toString();
-            let minutos  = (Math.floor(segundosP / 0x3C ) % 0x3C).toString();
-            let tiempo =  horas+':'+minutos+':'+segundos
-            let tyd = ""
+  });
+  worksheet.addRows(itemsToSave);
 
-            if(data.TYD_Categoria2 == -3){
-                tyd = 'No requiere T&D'
-            }else if(data.TYD_Categoria2 == 0){
-                tyd = 'OK'
-            }
-
-            let eq = ""
-            if(data.Cantidad_Equipos_Activados > 1){
-                eq = "SI"
-            }else{
-                eq= "NO"
-            }
-
-            itemToSave.Region= data.Region
-            itemToSave.Cedula= data.Cedula
-            itemToSave.Nombre= data.Nombre
-            itemToSave.Tarea= data.Tarea
-            itemToSave.TiempoEnSitio  = tiempo
-            itemToSave.TYD_Categoria2= tyd
-            itemToSave.Ingreso_EQ= eq
-            itemsToSave.push(itemToSave);
-            itemToSave = {};
-        });
-    worksheet.addRows(itemsToSave);
-
-    await workbook.xlsx.writeFile('./images/DemorasEnSitio/Reporte_Tecnicos_Demora_En_Sito.xlsx')
-}
+  await workbook.xlsx.writeFile(
+    "./images/DemorasEnSitio/Reporte_Tecnicos_Demora_En_Sito.xlsx"
+  );
+};
 
 const initReporteDemorasEnSitio = async () => {
+  try {
+    const [aprovisionamiento] = await Promise.all([getDataClick()]);
 
-    try {
-        const [
-            aprovisionamiento,
-        ] = await Promise.all([
-            getDataClick(),
-        ]);
-
-        let dataaprovisionamiento = []
-        for (const value of aprovisionamiento) {
-            dataaprovisionamiento.push(value);
-        }
-
-       await generarExcel( dataaprovisionamiento);
-
-        
-    } catch (error) {
-
-        console.log('Error ejecución:', error);
-
+    let dataaprovisionamiento = [];
+    for (const value of aprovisionamiento) {
+      dataaprovisionamiento.push(value);
     }
+
+    await generarExcel(dataaprovisionamiento);
+  } catch (error) {
+    console.log("Error ejecución:", error);
+  }
 };
 
 module.exports = {
-    initReporteDemorasEnSitio
-}
+  initReporteDemorasEnSitio,
+};

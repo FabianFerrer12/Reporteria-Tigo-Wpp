@@ -1,11 +1,10 @@
-const nodeHtmlToImage = require('node-html-to-image');
-const fs = require('fs');
-const mssqlDB = require('../database/conn-mssql');
+const nodeHtmlToImage = require("node-html-to-image");
+const fs = require("fs");
+const mssqlDB = require("../database/conn-mssql");
 
 const getDataClick = async (categoria) => {
-    try {
-
-        const result = await mssqlDB.dbConnectionMssql(`
+  try {
+    const result = await mssqlDB.dbConnectionMssql(`
 
         SELECT r.DateTimeExtraction, r.Region, COUNT (r.CallID) AS 'Ordenes' FROM(
         SELECT
@@ -125,35 +124,30 @@ const getDataClick = async (categoria) => {
          r.AREA ASC,
          r.Region ASC;`);
 
-        if (!result) {
-            console.log('Error en la conexion de la BD', result);
-            return false;
-        }
-
-        if (result.recordset.length == 0) {
-            console.log('Sin datos para listar', result.recordset.length);
-            return false;
-        }
-
-        let res = result.recordset;
-
-        return res;
-    } catch (error) {
-        console.log('ERROR: ', error);
+    if (!result) {
+      console.log("Error en la conexion de la BD", result);
+      return false;
     }
-}
 
+    if (result.recordset.length == 0) {
+      console.log("Sin datos para listar", result.recordset.length);
+    }
 
+    let res = result.recordset;
+
+    return res;
+  } catch (error) {
+    console.log("ERROR: ", error);
+  }
+};
 
 const generarImagen = async (titulo, namefile, data, fecha_full) => {
+  try {
+    const image = fs.readFileSync("./assets/LogoTigoBlanco.png");
+    const base64Image = new Buffer.from(image).toString("base64");
+    const dataURI = "data:image/jpeg;base64," + base64Image;
 
-    try {
-
-        const image = fs.readFileSync('./assets/LogoTigoBlanco.png');
-        const base64Image = new Buffer.from(image).toString('base64');
-        const dataURI = 'data:image/jpeg;base64,' + base64Image
-
-        let contentHtml = `<!DOCTYPE html>
+    let contentHtml = `<!DOCTYPE html>
         <html>
         <head>
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
@@ -207,99 +201,115 @@ const generarImagen = async (titulo, namefile, data, fecha_full) => {
         </thead>
             <tbody>`;
 
-            data.forEach(val => {
-                contentHtml += `<tr>
+    data.forEach((val) => {
+      contentHtml += `<tr>
                     <td colspan="2">${val.Region}</td>
                     <td colspan="6" class="text-right">${val.Ordenes}</td>
                 </tr>`;
-            });
+    });
 
-        contentHtml += `</tbody>
+    contentHtml += `</tbody>
         </table>
         
         </body>
         </html>`;
 
-        let res = await nodeHtmlToImage({
-            output: `./images/PedidosAbiertosHoy/${namefile}.png`,
-            html: contentHtml,
-            content: { imageSource: dataURI }
-        })
-        .then(() => `Imagen de ${namefile} creado con exito`);
+    let res = await nodeHtmlToImage({
+      output: `./images/PedidosAbiertosHoy/${namefile}.png`,
+      html: contentHtml,
+      content: { imageSource: dataURI },
+    }).then(() => `Imagen de ${namefile} creado con exito`);
 
-        return res;
-
-    } catch (error) {
-        console.log(error);
-    }
-}
-
+    return res;
+  } catch (error) {
+    console.log(error);
+  }
+};
 
 const initReportePedidos = async () => {
+  try {
+    let date = new Date();
+    let gethour = date.getHours();
 
-    try {
+    let anio = date.getFullYear();
+    let mes =
+      date.getMonth() + 1 < 10
+        ? "0" + (date.getMonth() + 1)
+        : date.getMonth() + 1;
+    let dia = date.getDate() < 10 ? "0" + date.getDate() : date.getDate();
+    let hora = date.getHours() < 10 ? "0" + date.getHours() : date.getHours();
+    let minutos =
+      date.getMinutes() < 10 ? "0" + date.getMinutes() : date.getMinutes();
+    let segundos =
+      date.getSeconds() < 10 ? "0" + date.getSeconds() : date.getSeconds();
 
-        let date = new Date();
-        let gethour = date.getHours();
+    let fecha_full = `${anio}-${mes}-${dia} ${hora}:${minutos}:${segundos}`;
 
-        let anio = date.getFullYear();
-        let mes = ((date.getMonth() + 1) < 10) ? '0'+(date.getMonth() + 1) : (date.getMonth() + 1);
-        let dia = ((date.getDate()) < 10) ? '0'+(date.getDate()) : (date.getDate());
-        let hora = ((date.getHours()) < 10) ? '0'+(date.getHours()) : (date.getHours());
-        let minutos = ((date.getMinutes()) < 10) ? '0'+(date.getMinutes()) : (date.getMinutes());
-        let segundos = ((date.getSeconds()) < 10) ? '0'+(date.getSeconds()) : (date.getSeconds());
+    const [
+      aprovisionamiento,
+      aprovisionamientobsc,
+      aseguramiento,
+      aseguramientobsc,
+    ] = await Promise.all([
+      getDataClick("Aprovisionamiento"),
+      getDataClick("Aprovisionamiento BSC"),
+      getDataClick("Aseguramiento"),
+      getDataClick("Aseguramiento BSC"),
+    ]);
 
-        let fecha_full = `${anio}-${mes}-${dia} ${hora}:${minutos}:${segundos}`;
-
-        const [
-            aprovisionamiento,
-            aprovisionamientobsc,
-            aseguramiento,
-            aseguramientobsc,
-        ] = await Promise.all([
-            getDataClick('Aprovisionamiento'),
-            getDataClick('Aprovisionamiento BSC'),
-            getDataClick('Aseguramiento'),
-            getDataClick('Aseguramiento BSC'),
-        ]);
-
-        let dataaprovisionamiento = []
-        for (const value of aprovisionamiento) {
-            dataaprovisionamiento.push(value);
-        }
-        let aprov = await generarImagen('Aprovisionamiento', 'aprovisionamiento', dataaprovisionamiento, fecha_full);
-
-        let dataaprovisionamientobsc = []
-        for (const value of aprovisionamientobsc) {
-            dataaprovisionamientobsc.push(value);
-        }
-        let aprovbsc = await generarImagen('Aprovisionamiento BSC', 'aprovisionamientobsc', dataaprovisionamientobsc, fecha_full);
-
-        let dataaseguramiento = []
-        for (const value of aseguramiento) {
-            dataaseguramiento.push(value);
-        }
-        let aseg = await generarImagen('Aseguramiento', 'aseguramiento', dataaseguramiento, fecha_full);
-
-        let dataaseguramientobsc = []
-        for (const value of aseguramientobsc) {
-            dataaseguramientobsc.push(value);
-        }
-        let asegbsc = await generarImagen('Aseguramiento BSC', 'aseguramientobsc', dataaseguramientobsc, fecha_full);
-
-
-        console.log('dataaprovisionamiento', aprov);
-        console.log('dataaprovisionamientobsc', aprovbsc);
-        console.log('dataaseguramiento', aseg);
-        console.log('dataaseguramientobsc', asegbsc);
-
-    } catch (error) {
-
-        console.log('Error ejecución:', error);
-
+    let dataaprovisionamiento = [];
+    for (const value of aprovisionamiento) {
+      dataaprovisionamiento.push(value);
     }
+    let aprov = await generarImagen(
+      "Aprovisionamiento",
+      "aprovisionamiento",
+      dataaprovisionamiento,
+      fecha_full
+    );
+
+    let dataaprovisionamientobsc = [];
+    for (const value of aprovisionamientobsc) {
+      dataaprovisionamientobsc.push(value);
+    }
+    let aprovbsc = await generarImagen(
+      "Aprovisionamiento BSC",
+      "aprovisionamientobsc",
+      dataaprovisionamientobsc,
+      fecha_full
+    );
+
+    let dataaseguramiento = [];
+    for (const value of aseguramiento) {
+      dataaseguramiento.push(value);
+    }
+    let aseg = await generarImagen(
+      "Aseguramiento",
+      "aseguramiento",
+      dataaseguramiento,
+      fecha_full
+    );
+
+    let dataaseguramientobsc = [];
+    for (const value of aseguramientobsc) {
+      dataaseguramientobsc.push(value);
+    }
+    let asegbsc = await generarImagen(
+      "Aseguramiento BSC",
+      "aseguramientobsc",
+      dataaseguramientobsc,
+      fecha_full
+    );
+
+    console.log("dataaprovisionamiento", aprov);
+    console.log("dataaprovisionamientobsc", aprovbsc);
+    console.log("dataaseguramiento", aseg);
+    console.log("dataaseguramientobsc", asegbsc);
+  } catch (error) {
+    console.log("Error ejecución:", error);
+  }
 };
 
 module.exports = {
-    initReportePedidos
-}
+  initReportePedidos,
+};

@@ -1,14 +1,13 @@
 const { Op } = require("sequelize");
-const nodeHtmlToImage = require('node-html-to-image');
-const fs = require('fs');
+const nodeHtmlToImage = require("node-html-to-image");
+const fs = require("fs");
 
-const mssqlDB = require('../database/conn-mssql');
+const mssqlDB = require("../database/conn-mssql");
 const db = require("../models");
 
 const getDataClick = async (categoria, estadosclick, horacita, tipotarea) => {
-    try {
-
-        const result = await mssqlDB.dbConnectionMssql(`SELECT
+  try {
+    const result = await mssqlDB.dbConnectionMssql(`SELECT
                                                             r.DateTimeExtraction,
                                                             r.AREA,
                                                             r.Region,
@@ -253,86 +252,80 @@ const getDataClick = async (categoria, estadosclick, horacita, tipotarea) => {
                                                             r.AREA ASC,
                                                             r.Region ASC;`);
 
-        if (!result) {
-            console.log('Error en la conexion de la BD', result);
-            return false;
-        }
-
-        if (result.recordset.length == 0) {
-            console.log('Sin datos para listar', result.recordset.length);
-            return false;
-        }
-
-        let res = result.recordset;
-
-        return res;
-    } catch (error) {
-        console.log('ERROR: ', error);
+    if (!result) {
+      console.log("Error en la conexion de la BD", result);
+      return false;
     }
-}
+
+    if (result.recordset.length == 0) {
+      console.log("Sin datos para listar", result.recordset.length);
+      return false;
+    }
+
+    let res = result.recordset;
+
+    return res;
+  } catch (error) {
+    console.log("ERROR: ", error);
+  }
+};
 
 const processRatio = async (region, categoria, gethour) => {
+  try {
+    let hour = 0;
 
-    try {
-
-        let hour = 0;
-
-        if (gethour >= 5 &&  gethour < 6) {
-            hour = 5;
-        } else if (gethour >= 6 &&  gethour < 7) {
-            hour = 6;
-        } else if (gethour >= 7 &&  gethour < 10) {
-            hour = 7;
-        } else if (gethour >= 10 &&  gethour < 12) {
-            hour = 10;
-        } else if (gethour >= 12 &&  gethour < 13) {
-            hour = 12;
-        } else if (gethour >= 13 &&  gethour < 14) {
-            hour = 13;
-        } else if (gethour >= 14 &&  gethour < 15) {
-            hour = 14;
-        } else if (gethour >= 15 &&  gethour < 16) {
-            hour = 15;
-        } else if (gethour >= 16 &&  gethour < 17) {
-            hour = 16;
-        } else if (gethour >= 17 &&  gethour < 18) {
-            hour = 17;
-        } else {
-            hour = 18;
-        }
-
-        let dataratio = await db['Ratio'].findAll({
-            where: {
-                [Op.and]: [
-                    { region: region },
-                    { categoria: categoria },
-                    { hora: hour }
-                ]
-            }
-        });
-
-        if (dataratio.length == 0) {
-            return false;
-        }
-
-        return dataratio;
-
-    } catch (error) {
-        console.log('Error process ratio: ', error);
-        throw('Error process ratio: ', error);
+    if (gethour >= 5 && gethour < 6) {
+      hour = 5;
+    } else if (gethour >= 6 && gethour < 7) {
+      hour = 6;
+    } else if (gethour >= 7 && gethour < 10) {
+      hour = 7;
+    } else if (gethour >= 10 && gethour < 12) {
+      hour = 10;
+    } else if (gethour >= 12 && gethour < 13) {
+      hour = 12;
+    } else if (gethour >= 13 && gethour < 14) {
+      hour = 13;
+    } else if (gethour >= 14 && gethour < 15) {
+      hour = 14;
+    } else if (gethour >= 15 && gethour < 16) {
+      hour = 15;
+    } else if (gethour >= 16 && gethour < 17) {
+      hour = 16;
+    } else if (gethour >= 17 && gethour < 18) {
+      hour = 17;
+    } else {
+      hour = 18;
     }
 
-}
+    let dataratio = await db["Ratio"].findAll({
+      where: {
+        [Op.and]: [
+          { region: region },
+          { categoria: categoria },
+          { hora: hour },
+        ],
+      },
+    });
+
+    if (dataratio.length == 0) {
+      return false;
+    }
+
+    return dataratio;
+  } catch (error) {
+    console.log("Error process ratio: ", error);
+    throw ("Error process ratio: ", error);
+  }
+};
 
 const generarImagen = async (titulo, namefile, data, fecha_full) => {
+  try {
+    const image = fs.readFileSync("./assets/LogoTigoBlanco.png");
+    const base64Image = new Buffer.from(image).toString("base64");
+    const dataURI = "data:image/jpeg;base64," + base64Image;
 
-    try {
-
-        const image = fs.readFileSync('./assets/LogoTigoBlanco.png');
-        const base64Image = new Buffer.from(image).toString('base64');
-        const dataURI = 'data:image/jpeg;base64,' + base64Image
-
-        let contentHtml = `<!DOCTYPE html>
+    let contentHtml = `<!DOCTYPE html>
         <html>
         <head>
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
@@ -391,9 +384,11 @@ const generarImagen = async (titulo, namefile, data, fecha_full) => {
         </thead>
             <tbody>`;
 
-            data.forEach(val => {
-                let estado = (val.validation) ? '<i class="fa fa-check" style="color:green;"></i>' : '<i class="fa fa-times" style="color:red;"></i>';
-                contentHtml += `<tr>
+    data.forEach((val) => {
+      let estado = val.validation
+        ? '<i class="fa fa-check" style="color:green;"></i>'
+        : '<i class="fa fa-times" style="color:red;"></i>';
+      contentHtml += `<tr>
                     <td>${val.AREA}</td>
                     <td>${val.Region}</td>
                     <td class="text-right">${val.cant_tareas}</td>
@@ -402,148 +397,177 @@ const generarImagen = async (titulo, namefile, data, fecha_full) => {
                     <td class="text-right">${val.ratioesperado}</td>
                     <td class="text-center">${estado}</td>
                 </tr>`;
-            });
+    });
 
-        contentHtml += `</tbody>
+    contentHtml += `</tbody>
         </table>
         
         </body>
         </html>`;
 
-        let res = await nodeHtmlToImage({
-            output: `./images/Inicio y seguimiento/${namefile}.png`,
-            html: contentHtml,
-            content: { imageSource: dataURI }
-        })
-        .then(() => `Imagen de ${namefile} creado con exito`);
+    let res = await nodeHtmlToImage({
+      output: `./images/Inicio y seguimiento/${namefile}.png`,
+      html: contentHtml,
+      content: { imageSource: dataURI },
+    }).then(() => `Imagen de ${namefile} creado con exito`);
 
-        return res;
-
-    } catch (error) {
-        console.log(error);
-    }
-}
-
+    return res;
+  } catch (error) {
+    console.log(error);
+  }
+};
 
 const initReporte = async () => {
+  try {
+    let date = new Date();
+    let gethour = date.getHours();
 
-    try {
+    let anio = date.getFullYear();
+    let mes =
+      date.getMonth() + 1 < 10
+        ? "0" + (date.getMonth() + 1)
+        : date.getMonth() + 1;
+    let dia = date.getDate() < 10 ? "0" + date.getDate() : date.getDate();
+    let hora = date.getHours() < 10 ? "0" + date.getHours() : date.getHours();
+    let minutos =
+      date.getMinutes() < 10 ? "0" + date.getMinutes() : date.getMinutes();
+    let segundos =
+      date.getSeconds() < 10 ? "0" + date.getSeconds() : date.getSeconds();
 
-        let date = new Date();
-        let gethour = date.getHours();
+    let fecha_full = `${anio}-${mes}-${dia} ${hora}:${minutos}:${segundos}`;
 
-        let anio = date.getFullYear();
-        let mes = ((date.getMonth() + 1) < 10) ? '0'+(date.getMonth() + 1) : (date.getMonth() + 1);
-        let dia = ((date.getDate()) < 10) ? '0'+(date.getDate()) : (date.getDate());
-        let hora = ((date.getHours()) < 10) ? '0'+(date.getHours()) : (date.getHours());
-        let minutos = ((date.getMinutes()) < 10) ? '0'+(date.getMinutes()) : (date.getMinutes());
-        let segundos = ((date.getSeconds()) < 10) ? '0'+(date.getSeconds()) : (date.getSeconds());
+    let estadosclick = "";
+    let horacita = "";
+    let tipotarea = "";
 
-        let fecha_full = `${anio}-${mes}-${dia} ${hora}:${minutos}:${segundos}`;
-
-        let estadosclick = '';
-        let horacita = ''
-        let tipotarea = '';
-
-        if (gethour >= 7 &&  gethour < 10) {
-            estadosclick = "\'Abierto\', \'Asignado\', \'Despachado\', \'En Camino\' , \'En Sitio\'";
-            horacita = "";
-            tipotarea = "AND TT.W6Key != 124829709";
-        }else if(gethour >= 10 && gethour < 11){
-            estadosclick = "\'Abierto\', \'Asignado\', \'Despachado\', \'En Camino\'";
-            horacita = "AND UNEHoraCita = \'AM\'";
-            tipotarea = "AND TT.W6Key != 124829709";
-        }else if(gethour >= 11){
-            estadosclick = "\'Abierto\', \'Asignado\', \'Despachado\', \'En Camino\'";
-            horacita = "";
-            tipotarea = "AND TT.W6Key != 124829709";
-        }
-
-        const [
-            aprovisionamiento,
-            aprovisionamientobsc,
-            aseguramiento,
-            aseguramientobsc,
-        ] = await Promise.all([
-            getDataClick('Aprovisionamiento', estadosclick, horacita, tipotarea),
-            getDataClick('Aprovisionamiento BSC', estadosclick, horacita, tipotarea),
-            getDataClick('Aseguramiento', estadosclick, horacita, tipotarea),
-            getDataClick('Aseguramiento BSC', estadosclick, horacita, tipotarea),
-        ]);
-
-        let dataaprovisionamiento = []
-        for (const value of aprovisionamiento) {
-            /* let date = new Date();
-            let gethour = date.getHours(); */
-
-            let ratioesp = await processRatio(value.Region, value.Categoria, gethour)
-
-            let ratiowait = (!ratioesp) ? 0 : ratioesp[0].ratioesperado;
-            value.ratioesperado = ratiowait;
-            value.validation = (value.ratio <= ratiowait) ? true : false;
-
-            dataaprovisionamiento.push(value);
-        }
-        let aprov = await generarImagen('Aprovisionamiento', 'aprovisionamiento', dataaprovisionamiento, fecha_full);
-
-        let dataaprovisionamientobsc = []
-        for (const value of aprovisionamientobsc) {
-            /* let date = new Date();
-            let gethour = date.getHours(); */
-
-            let ratioesp = await processRatio(value.Region, value.Categoria, gethour)
-
-            let ratiowait = (!ratioesp) ? 0 : ratioesp[0].ratioesperado;
-            value.ratioesperado = ratiowait;
-            value.validation = (value.ratio <= ratiowait) ? true : false;
-
-            dataaprovisionamientobsc.push(value);
-        }
-        let aprovbsc = await generarImagen('Aprovisionamiento BSC', 'aprovisionamientobsc', dataaprovisionamientobsc, fecha_full);
-
-        let dataaseguramiento = []
-        for (const value of aseguramiento) {
-            /* let date = new Date();
-            let gethour = date.getHours(); */
-
-            let ratioesp = await processRatio(value.Region, value.Categoria, gethour)
-
-            let ratiowait = (!ratioesp) ? 0 : ratioesp[0].ratioesperado;
-            value.ratioesperado = ratiowait;
-            value.validation = (value.ratio <= ratiowait) ? true : false;
-
-            dataaseguramiento.push(value);
-        }
-        let aseg = await generarImagen('Aseguramiento', 'aseguramiento', dataaseguramiento, fecha_full);
-
-        let dataaseguramientobsc = []
-        for (const value of aseguramientobsc) {
-            /* let date = new Date();
-            let gethour = date.getHours(); */
-
-            let ratioesp = await processRatio(value.Region, value.Categoria, gethour)
-
-            let ratiowait = (!ratioesp) ? 0 : ratioesp[0].ratioesperado;
-            value.ratioesperado = ratiowait;
-            value.validation = (value.ratio <= ratiowait) ? true : false;
-
-            dataaseguramientobsc.push(value);
-        }
-        let asegbsc = await generarImagen('Aseguramiento BSC', 'aseguramientobsc', dataaseguramientobsc, fecha_full);
-
-
-        console.log('dataaprovisionamiento', aprov);
-        console.log('dataaprovisionamientobsc', aprovbsc);
-        console.log('dataaseguramiento', aseg);
-        console.log('dataaseguramientobsc', asegbsc);
-
-    } catch (error) {
-
-        console.log('Error ejecución:', error);
-
+    if (gethour >= 7 && gethour < 10) {
+      estadosclick =
+        "'Abierto', 'Asignado', 'Despachado', 'En Camino' , 'En Sitio'";
+      horacita = "";
+      tipotarea = "AND TT.W6Key != 124829709";
+    } else if (gethour >= 10 && gethour < 11) {
+      estadosclick = "'Abierto', 'Asignado', 'Despachado', 'En Camino'";
+      horacita = "AND UNEHoraCita = 'AM'";
+      tipotarea = "AND TT.W6Key != 124829709";
+    } else if (gethour >= 11) {
+      estadosclick = "'Abierto', 'Asignado', 'Despachado', 'En Camino'";
+      horacita = "";
+      tipotarea = "AND TT.W6Key != 124829709";
     }
+
+    const [
+      aprovisionamiento,
+      aprovisionamientobsc,
+      aseguramiento,
+      aseguramientobsc,
+    ] = await Promise.all([
+      getDataClick("Aprovisionamiento", estadosclick, horacita, tipotarea),
+      getDataClick("Aprovisionamiento BSC", estadosclick, horacita, tipotarea),
+      getDataClick("Aseguramiento", estadosclick, horacita, tipotarea),
+      getDataClick("Aseguramiento BSC", estadosclick, horacita, tipotarea),
+    ]);
+
+    let dataaprovisionamiento = [];
+    for (const value of aprovisionamiento) {
+      /* let date = new Date();
+            let gethour = date.getHours(); */
+
+      let ratioesp = await processRatio(value.Region, value.Categoria, gethour);
+
+      let ratiowait = !ratioesp ? 0 : ratioesp[0].ratioesperado;
+      value.ratioesperado = ratiowait;
+      value.validation = value.ratio <= ratiowait ? true : false;
+
+      dataaprovisionamiento.push(value);
+    }
+    let aprov;
+    if (dataaprovisionamiento) {
+      aprov = await generarImagen(
+        "Aprovisionamiento",
+        "aprovisionamiento",
+        dataaprovisionamiento,
+        fecha_full
+      );
+    }
+
+    let dataaprovisionamientobsc = [];
+    for (const value of aprovisionamientobsc) {
+      /* let date = new Date();
+            let gethour = date.getHours(); */
+
+      let ratioesp = await processRatio(value.Region, value.Categoria, gethour);
+
+      let ratiowait = !ratioesp ? 0 : ratioesp[0].ratioesperado;
+      value.ratioesperado = ratiowait;
+      value.validation = value.ratio <= ratiowait ? true : false;
+
+      dataaprovisionamientobsc.push(value);
+    }
+    let aprovbsc;
+    if (dataaprovisionamientobsc) {
+      aprovbsc = await generarImagen(
+        "Aprovisionamiento BSC",
+        "aprovisionamientobsc",
+        dataaprovisionamientobsc,
+        fecha_full
+      );
+    }
+
+    let dataaseguramiento = [];
+    for (const value of aseguramiento) {
+      /* let date = new Date();
+            let gethour = date.getHours(); */
+
+      let ratioesp = await processRatio(value.Region, value.Categoria, gethour);
+
+      let ratiowait = !ratioesp ? 0 : ratioesp[0].ratioesperado;
+      value.ratioesperado = ratiowait;
+      value.validation = value.ratio <= ratiowait ? true : false;
+
+      dataaseguramiento.push(value);
+    }
+    let aseg;
+    if (dataaseguramiento) {
+      aseg = await generarImagen(
+        "Aseguramiento",
+        "aseguramiento",
+        dataaseguramiento,
+        fecha_full
+      );
+    }
+
+    let dataaseguramientobsc = [];
+    for (const value of aseguramientobsc) {
+      /* let date = new Date();
+            let gethour = date.getHours(); */
+
+      let ratioesp = await processRatio(value.Region, value.Categoria, gethour);
+
+      let ratiowait = !ratioesp ? 0 : ratioesp[0].ratioesperado;
+      value.ratioesperado = ratiowait;
+      value.validation = value.ratio <= ratiowait ? true : false;
+
+      dataaseguramientobsc.push(value);
+    }
+    let asegbsc;
+    if (dataaseguramientobsc) {
+      asegbsc = await generarImagen(
+        "Aseguramiento BSC",
+        "aseguramientobsc",
+        dataaseguramientobsc,
+        fecha_full
+      );
+    }
+
+    console.log("dataaprovisionamiento", aprov);
+    console.log("dataaprovisionamientobsc", aprovbsc);
+    console.log("dataaseguramiento", aseg);
+    console.log("dataaseguramientobsc", asegbsc);
+  } catch (error) {
+    console.log("Error ejecución:", error);
+  }
 };
 
 module.exports = {
-    initReporte
-}
+  initReporte,
+};
