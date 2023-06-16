@@ -5,7 +5,7 @@ const mssqlDB = require("../database/conn-mssql");
 const getDataClick = async (categoria) => {
   try {
     const result = await mssqlDB.dbConnectionMssql(`
-
+    BEGIN TRAN
         SELECT r.DateTimeExtraction, r.Region, COUNT (r.CallID) AS 'Ordenes' FROM(
         SELECT
         GETDATE() DateTimeExtraction,
@@ -122,7 +122,8 @@ const getDataClick = async (categoria) => {
          r.Categoria
         ORDER BY
          r.AREA ASC,
-         r.Region ASC;`);
+         r.Region ASC
+         COMMIT TRANSACTION ;`);
 
     if (!result) {
       console.log("Error en la conexion de la BD", result);

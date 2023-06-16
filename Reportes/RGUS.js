@@ -2,7 +2,6 @@ const XLSX = require("xlsx");
 const mssqlDB = require("../database/conn-mssql");
 const nodeHtmlToImage = require("node-html-to-image");
 const fs = require("fs");
-const ExcelJS = require("exceljs");
 const leerRgus = async (ruta) => {
   const workbook = XLSX.readFile(ruta);
   const workbookSheets = workbook.SheetNames;
@@ -13,8 +12,9 @@ const leerRgus = async (ruta) => {
 
 const getDataClick = async (variable) => {
   try {
-    const result =
-      await mssqlDB.dbConnectionMssql(`SELECT R.Regiones, SUM(R.RGU) Cumplidos FROM(SELECT TK.CompletionDate,TK.AppointmentStart ,TK.CallID, TK.UNEPedido,TTC.Name Categoria, 
+    const result = await mssqlDB.dbConnectionMssql(`
+      BEGIN TRAN
+      SELECT R.Regiones, SUM(R.RGU) Cumplidos FROM(SELECT TK.CompletionDate,TK.AppointmentStart ,TK.CallID, TK.UNEPedido,TTC.Name Categoria, 
             (CASE 
             WHEN TT.Name LIKE('%Adicion HFC Plus%') THEN 'Nuevo'
             WHEN TT.Name LIKE ('%Nuevo Mono%') THEN 'Nuevo'
@@ -65,7 +65,9 @@ const getDataClick = async (variable) => {
             WHERE ${variable}
             
             GROUP BY R.Regiones
-            ORDER BY R.Regiones ASC`);
+            ORDER BY R.Regiones ASC
+            
+            COMMIT TRANSACTION`);
 
     if (!result) {
       console.log("Error en la conexion de la BD", result);
@@ -84,8 +86,9 @@ const getDataClick = async (variable) => {
 
 const getDataAseguramiento = async () => {
   try {
-    const result =
-      await mssqlDB.dbConnectionMssql(`SELECT R.Regiones, COUNT(*) Cumplidos FROM(SELECT TK.CallID, TK.UNEPedido, TTC.Name Categoria, SS.Name Sistema,(CASE WHEN DIS.Name IN('FACATATIVA_1','FUNZA_1','FUSAGASUGA_1','MOSQUERA_1','FUNZA_MOSQUERA','CHIA_CAJICA') THEN 'Cundinamarca'
+    const result = await mssqlDB.dbConnectionMssql(`
+      BEGIN TRAN
+      SELECT R.Regiones, COUNT(*) Cumplidos FROM(SELECT TK.CallID, TK.UNEPedido, TTC.Name Categoria, SS.Name Sistema,(CASE WHEN DIS.Name IN('FACATATIVA_1','FUNZA_1','FUSAGASUGA_1','MOSQUERA_1','FUNZA_MOSQUERA','CHIA_CAJICA') THEN 'Cundinamarca'
       WHEN DIS.Name IN ('SOACHA_1','CAJICA_1','CHIA_1','BOSA','BOSA_1','BOSA_2','BOSA_3','BOSA_4','BOSA_MC','CAN','CAN_1_E6','ECA','ENG','ENG_2','ENGATIVA_MC','FRAGUA_3_MC','FRAGUA_4_MC','FRAGUA_MC','FRG','FRG_1','FRG_2','FRG_3','FRG_4','FRG_5',
       'QCA','QCA_E6','SUBA','SUBA_MC_1','SUBA_MC_2','TIMIZA','TIMIZA_1','TIMIZA_2','TIMIZA_3','TIMIZA_4','TIMIZA_5','TIMIZA_6','TIMIZA_7','TIMIZA_MC_1','TIMIZA_MC_2','TIMIZA_MC_3','TIMIZA_MC_4') THEN 'Bogota' 
       WHEN DIS.Name IN('CAUCASIA_1') THEN 'Antioquia_Edatel'
@@ -121,7 +124,8 @@ const getDataAseguramiento = async () => {
       AND TK.CompletionDate < DATEADD(day, +1, CONVERT (date, SYSDATETIME()))
       )AS r
       
-      GROUP BY R.Regiones`);
+      GROUP BY R.Regiones
+      COMMIT TRANSACTION`);
 
     if (!result) {
       console.log("Error en la conexion de la BD", result);
@@ -610,9 +614,7 @@ const generarImagen = async (titulo, namefile, data, fecha_full) => {
 };
 
 const HFCCOBRE = async () => {
-  let Rgus = await leerRgus(
-    "//une-file/0471/Equipo Soporte_&_Plataformas/PROYECCION/2023/06 Junio/Base_Carga_RGUs.xlsx"
-  );
+  let Rgus = await leerRgus("./Reportes/Base_Carga_RGUs.xlsx");
   let variable =
     "R.Categoria = 'Aprovisionamiento' AND R.TECNOLOGIA = 'HFC-COBRE' AND R.TIPO_RGU = 'Nuevo'";
   let dataConsulta = await getDataClick(variable);
@@ -638,9 +640,7 @@ const HFCCOBRE = async () => {
   return posibles;
 };
 const GPON = async () => {
-  let Rgus = await leerRgus(
-    "//une-file/0471/Equipo Soporte_&_Plataformas/PROYECCION/2023/06 Junio/Base_Carga_RGUs.xlsx"
-  );
+  let Rgus = await leerRgus("./Reportes/Base_Carga_RGUs.xlsx");
   let variable =
     "R.Categoria = 'Aprovisionamiento' AND R.TECNOLOGIA = 'GPON' AND R.TIPO_RGU = 'Nuevo'";
   let dataConsulta = await getDataClick(variable);
@@ -666,9 +666,7 @@ const GPON = async () => {
   return posibles;
 };
 const HFCCOBRE_GPON = async () => {
-  let Rgus = await leerRgus(
-    "//une-file/0471/Equipo Soporte_&_Plataformas/PROYECCION/2023/06 Junio/Base_Carga_RGUs.xlsx"
-  );
+  let Rgus = await leerRgus("./Reportes/Base_Carga_RGUs.xlsx");
   let variable = "R.Categoria = 'Aprovisionamiento' AND R.TIPO_RGU = 'Nuevo'";
   let dataConsulta = await getDataClick(variable);
 
@@ -693,9 +691,7 @@ const HFCCOBRE_GPON = async () => {
   return posibles;
 };
 const MasivosHogares = async () => {
-  let Rgus = await leerRgus(
-    "//une-file/0471/Equipo Soporte_&_Plataformas/PROYECCION/2023/06 Junio/Base_Carga_RGUs.xlsx"
-  );
+  let Rgus = await leerRgus("./Reportes/Base_Carga_RGUs.xlsx");
   let variable =
     "R.Categoria = 'Aprovisionamiento' AND R.TIPO_RGU IN ('Extension','Traslado','Migracion')";
   let dataConsulta = await getDataClick(variable);
@@ -721,9 +717,7 @@ const MasivosHogares = async () => {
   return posibles;
 };
 const BSC = async () => {
-  let Rgus = await leerRgus(
-    "//une-file/0471/Equipo Soporte_&_Plataformas/PROYECCION/2023/06 Junio/Base_Carga_RGUs.xlsx"
-  );
+  let Rgus = await leerRgus("./Reportes/Base_Carga_RGUs.xlsx");
   let variable =
     "R.Categoria = 'Aprovisionamiento BSC' AND R.TIPO_RGU = 'Nuevo'";
   let dataConsulta = await getDataClick(variable);
@@ -749,9 +743,7 @@ const BSC = async () => {
   return posibles;
 };
 const Aseguramiento = async () => {
-  let Rgus = await leerRgus(
-    "//une-file/0471/Equipo Soporte_&_Plataformas/PROYECCION/2023/06 Junio/Base_Carga_RGUs.xlsx"
-  );
+  let Rgus = await leerRgus("./Reportes/Base_Carga_RGUs.xlsx");
   let variable = "R.Categoria = 'Aseguramiento' AND  R.TIPO_RGU = 'Reparacion'";
   let dataConsulta = await getDataClick(variable);
   let dataEscalado = await getDataAseguramiento();

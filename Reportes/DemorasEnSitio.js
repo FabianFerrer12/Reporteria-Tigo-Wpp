@@ -6,7 +6,7 @@ const mssqlDB = require("../database/conn-mssql");
 const getDataClick = async () => {
   try {
     const result = await mssqlDB.dbConnectionMssql(`
-
+    BEGIN TRAN
         SELECT R.Region,R.EngineerID AS 'Cedula',R.EngineerName AS 'Nombre', r.CallID AS 'Tarea',
 (CASE WHEN (R.DiagnosticoFinal = 'OK' OR R.DiagnosticoFinal = 'En progreso') AND(R.RequierePrueba = 0 OR R.RequierePrueba = -1) THEN 0 WHEN (R.DiagnosticoFinal = 'ERROR' OR R.DiagnosticoFinal = 'Timeout') AND (R.RequierePrueba = 0 OR R.RequierePrueba = -1) THEN 1 WHEN R.DiagnosticoFinal IS NULL AND R.RequierePrueba = 0 THEN -3 WHEN R.DiagnosticoFinal IS NULL AND R.RequierePrueba = -1 THEN -2 ELSE -4 END) AS TYD_Categoria2, 
 SUM(CASE WHEN r.SerialNo IS NOT NULL THEN 1 ELSE 0 END) AS Cantidad_Equipos_Activados, 
@@ -37,7 +37,8 @@ INNER JOIN W6UNEEQUIPMENTUSED EQ ON TK_EQ.UNEEquipmentUsedKey=EQ.W6Key
 WHERE ASSG.StartTime>= CONVERT (DATE, SYSDATETIME()) AND ASSG.StartTime< DATEADD(DAY, 1, CONVERT (DATE, SYSDATETIME())) AND EST.W6Key IN (124135429) AND (CAT.Name IN('Aprovisionamiento', 'Aseguramiento')) AND EST.Name IN ('En Sitio') AND EQ."Type" IN ('Install','Traslado')) AS R
 WHERE R.Tiempoensitio >120 AND (R.DiagnosticoFinal = 'OK' OR R.RequierePrueba = 0) AND R.TaskType LIKE ('%Nuevo%')
 GROUP BY r.CallID,R.EngineerID,R.EngineerName, R.Region,R.OnSiteDate,R.CompletionDate, R.DiagnosticoFinal, R.RequierePrueba, R.Proceso, R.TiempoenSitio
-ORDER BY R.Region, R.EngineerName ASC ;`);
+ORDER BY R.Region, R.EngineerName ASC 
+COMMIT TRANSACTION;`);
 
     if (!result) {
       console.log("Error en la conexion de la BD", result);
@@ -46,7 +47,6 @@ ORDER BY R.Region, R.EngineerName ASC ;`);
 
     if (result.recordset.length == 0) {
       console.log("Sin datos para listar", result.recordset.length);
-      return false;
     }
 
     let res = result.recordset;

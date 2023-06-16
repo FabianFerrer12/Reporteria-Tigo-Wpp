@@ -7,7 +7,9 @@ const db = require("../models");
 
 const getDataClick = async (categoria, estadosclick, horacita, tipotarea) => {
   try {
-    const result = await mssqlDB.dbConnectionMssql(`SELECT
+    const result = await mssqlDB.dbConnectionMssql(`
+    BEGIN TRAN
+    SELECT
                                                             r.DateTimeExtraction,
                                                             r.AREA,
                                                             r.Region,
@@ -250,7 +252,8 @@ const getDataClick = async (categoria, estadosclick, horacita, tipotarea) => {
                                                             r.Categoria
                                                         ORDER BY
                                                             r.AREA ASC,
-                                                            r.Region ASC;`);
+                                                            r.Region ASC
+                                                            COMMIT TRANSACTION;`);
 
     if (!result) {
       console.log("Error en la conexion de la BD", result);
@@ -259,7 +262,6 @@ const getDataClick = async (categoria, estadosclick, horacita, tipotarea) => {
 
     if (result.recordset.length == 0) {
       console.log("Sin datos para listar", result.recordset.length);
-      return false;
     }
 
     let res = result.recordset;

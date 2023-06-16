@@ -77,6 +77,33 @@ const sendDemorasEnSitio = async (req, res) => {
 
 const sendRgus = async (req, res) => {
   await initRgus();
+  //let from = "573007080935-1627479426@g.us";
+  let from = "120363114662627150@g.us";
+
+  sendMessage(from, "Reporte RGUs");
+
+  sendMedia(from, "RGUs/HFC-COBRE & GPON.png");
+
+  setTimeout(() => {
+    sendMedia(from, "RGUs/GPON.png");
+  }, 1000);
+
+  setTimeout(() => {
+    sendMedia(from, "RGUs/HFC-COBRE.png");
+  }, 2000);
+
+  setTimeout(() => {
+    sendMedia(from, "RGUs/Masivos Hogares.png");
+  }, 3000);
+
+  setTimeout(() => {
+    sendMedia(from, "RGUs/BSC.png");
+  }, 4000);
+
+  setTimeout(() => {
+    sendMedia(from, "RGUs/Aseguramiento.png");
+  }, 5000);
+
   res.send({ status: "Enviado" });
 };
 
